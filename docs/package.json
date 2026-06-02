@@ -1,0 +1,15 @@
+{
+  "name": "xkbtoolbox-docs",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "显卡吧工具箱官方网站",
+  "scripts": {
+    "start": "vitepress dev",
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.3"
+  }
+}
