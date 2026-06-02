@@ -4,9 +4,9 @@ export default defineConfig({
   title: '显卡吧工具箱',
   description: '面向 PC 硬件爱好者与 DIY 玩家的 Windows 桌面工具集',
   lang: 'zh-CN',
-  base: '/xkbtool/',
+  base: '/',
   head: [
-    ['link', { rel: 'icon', href: '/xkbtool/icon.svg' }]
+    ['link', { rel: 'icon', href: '/icon.svg' }]
   ],
   themeConfig: {
     logo: '/icon.svg',
