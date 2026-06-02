@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>显卡吧工具箱 WinUI3</title>
+<script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --accent: #0078d4;
+  --accent-hover: #1a86d9;
+  --bg: #f3f3f3;
+  --card-bg: #ffffff;
+  --card-border: #e0e0e0;
+  --text-primary: #1a1a1a;
+  --text-secondary: #666;
+  --nav-bg: #f8f8f8;
+  --nav-hover: #e8e8e8;
+  --nav-active: #e0e0e0;
+  --title-bar: #f3f3f3;
+  --sidebar-width: 260px;
+  --title-height: 40px;
+}
+body {
+  font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+/* Title Bar */
+.title-bar {
+  height: var(--title-height);
+  background: var(--title-bar);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  -webkit-app-region: drag;
+  user-select: none;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.title-bar .back-btn {
+  width: 40px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--text-secondary);
+  -webkit-app-region: no-drag;
+}
+.title-bar .back-btn:hover { background: var(--nav-hover); }
+.title-bar .title-text {
+  font-size: 13px;
+  font-weight: 600;
+  margin-left: 8px;
+  color: var(--text-primary);
+}
+/* Main Layout */
+.main-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--nav-bg);
+  border-right: 1px solid rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.sidebar-header {
+  padding: 16px 16px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.nav-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 4px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  margin: 1px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  gap: 12px;
+  user-select: none;
+}
+.nav-item:hover { background: var(--nav-hover); }
+.nav-item.active {
+  background: var(--nav-active);
+  font-weight: 600;
+}
+.nav-item .nav-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+.nav-item.active .nav-icon { color: var(--accent); }
+.nav-item .nav-label { font-size: 14px; }
+.nav-separator {
+  height: 1px;
+  background: var(--card-border);
+  margin: 8px 12px;
+}
+.sidebar-footer {
+  padding: 4px;
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+.sidebar-footer .nav-item .nav-icon { font-size: 16px; }
+/* Content Area */
+.content-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+.content-header {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+}
+/* Tool Cards Grid */
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.tool-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 16px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s;
+}
+.tool-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.card-icon {
+  font-size: 32px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.card-name {
+  font-size: 16px;
+  font-weight: 600;
+  flex: 1;
+}
+.card-fav {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text-secondary);
+  padding: 0;
+  line-height: 1;
+}
+.card-fav.active { color: #ffb400; }
+.card-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  flex: 1;
+}
+.card-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.card-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 6px 20px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.card-btn:hover { background: var(--accent-hover); }
+.card-btn.green { background: #00a500; }
+.card-btn.green:hover { background: #00b800; }
+/* System Info Page */
+.sysinfo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.sysinfo-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 20px;
+}
+.sysinfo-card .label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.sysinfo-card .value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.sysinfo-card .sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+/* Donut Chart */
+.donut-container {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  padding: 24px 0;
+}
+.donut-item { text-align: center; }
+.donut-item .donut-label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+.donut-item .donut-value {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.donut-ring {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.donut-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+.donut-pct {
+  font-size: 20px;
+  font-weight: 700;
+  z-index: 1;
+}
+/* Horizontal Bar */
+.bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0;
+}
+.bar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.bar-label {
+  font-size: 14px;
+  font-weight: 600;
+  width: 40px;
+  text-align: right;
+}
+.bar-track {
+  flex: 1;
+  height: 24px;
+  background: #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 12px;
+  transition: width 0.6s ease;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  min-width: 40px;
+}
+.bar-value {
+  font-size: 13px;
+  color: var(--text-secondary);
+  width: 40px;
+}
+.chart-toggle {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.chart-toggle-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.chart-toggle-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+/* Network Page */
+.network-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.tab-btn {
+  padding: 8px 20px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 15px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+.tab-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+.tab-btn:hover:not(.active) { background: var(--nav-hover); }
+/* Speed Test */
+.speed-display {
+  text-align: center;
+  padding: 40px;
+}
+.speed-value {
+  font-size: 64px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.speed-unit {
+  font-size: 18px;
+  color: var(--text-secondary);
+  margin-left: 8px;
+}
+.speed-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+/* Search Box */
+.search-box {
+  display: flex;
+  align-items: center;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 0 12px;
+  margin-bottom: 20px;
+  height: 36px;
+}
+.search-box input {
+  border: none;
+  outline: none;
+  flex: 1;
+  font-size: 14px;
+  background: transparent;
+  color: var(--text-primary);
+}
+.search-box .search-icon {
+  color: var(--text-secondary);
+  margin-right: 8px;
+}
+/* Proxy Page */
+.proxy-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ccc;
+}
+.status-dot.running { background: #00a500; }
+.status-dot.stopped { background: #e81123; }
+.proxy-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.proxy-btn {
+  padding: 10px 28px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.proxy-btn.primary {
+  background: var(--accent);
+  color: #fff;
+}
+.proxy-btn.primary:hover { background: var(--accent-hover); }
+.proxy-btn.secondary {
+  background: var(--nav-hover);
+  color: var(--text-primary);
+}
+.proxy-btn.secondary:hover { background: var(--nav-active); }
+/* Store Page */
+.store-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.store-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0078d4, #00b4d8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.store-info { flex: 1; }
+.store-info .store-name {
+  font-size: 18px;
+  font-weight: 600;
+}
+.store-info .store-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+.store-info .store-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+/* Download Progress */
+.download-footer {
+  position: fixed;
+  bottom: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  background: var(--nav-bg);
+  border-top: 1px solid var(--card-border);
+  padding: 8px 24px;
+  display: none;
+  align-items: center;
+  gap: 16px;
+}
+.download-footer.show { display: flex; }
+.download-footer progress {
+  flex: 1;
+  height: 4px;
+}
+.download-footer .dl-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+/* Settings Page */
+.settings-section {
+  margin-bottom: 24px;
+}
+.settings-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.settings-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 12px;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.settings-row .settings-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-right: 12px;
+}
+.settings-row .settings-label { font-size: 18px; font-weight: 600; }
+.settings-row .settings-sub { font-size: 12px; color: var(--text-secondary); }
+select.settings-select {
+  padding: 6px 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  font-size: 14px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  min-width: 140px;
+}
+input.settings-input {
+  padding: 8px 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  font-size: 14px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  width: 100%;
+  margin: 8px 0;
+}
+.btn-settings {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  background: var(--accent);
+  color: #fff;
+}
+.btn-settings:hover { background: var(--accent-hover); }
+.btn-settings.secondary {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
+}
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #a0a0a0; }
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #333;
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 9999;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+/* Hidden */
+.hidden { display: none !important; }
+/* Responsive */
+@media (max-width: 900px) {
+  .tool-grid { grid-template-columns: repeat(2, 1fr); }
+  .sysinfo-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .tool-grid { grid-template-columns: 1fr; }
+  .sidebar { width: 200px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Title Bar -->
+<div class="title-bar">
+  <button class="back-btn" onclick="goBack()" title="返回"><iconify-icon icon="fluent:arrow-left-24-regular" width="18"></iconify-icon></button>
+  <span class="title-text">显卡吧工具箱 WinUI3</span>
+</div>
+
+<!-- Main Layout -->
+<div class="main-layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="nav-list">
+      <div class="nav-item active" data-page="system" onclick="navigate(this)">
+        <span class="nav-icon"><iconify-icon icon="fluent:desktop-24-regular" width="20"></iconify-icon></span>
+        <span class="nav-label">系统信息</span>
+      </div>
+      <div class="nav-item" data-page="favorites" onclick="navigate(this)">
+        <span class="nav-icon"><iconify-icon icon="fluent:star-24-regular" width="20"></iconify-icon></span>
+        <span class="nav-label">收藏夹</span>
+      </div>
+      <div class="nav-separator"></div>
+      <div class="nav-item" data-page="cpu" onclick="navigate(this)">
+        <span class="nav-icon"><iconify-icon icon="fluent:brain-circuit-24-regular" width="20"></iconify-icon></span>
+        <span class="nav-label">CPU工具</span>
+      </div>
+      <div class="nav-item" data-page="gpu" onclick="navigate(this)">
+        <span class="nav-icon"><iconify-icon icon="fluent:video-24-regular" width="20"></iconify-icon></span>
+        <span class="nav-label">显卡工具</span>
+      </div>
+      <div class="nav-item" data-page="ram" onclick="navigate(this)">
+        <span class="nav-icon"><iconify-icon icon="fluent:hard-drive-24-regular" width="20"></iconify-icon></span>
+        <span class="nav-label">内存工具</span>
+      </div>
+      <div class="nav-item" data-page="disk" onclick="navigate(this)">
+        <span class="nav-icon"><iconify-icon icon="fluent:storage-24-regular" width="20"></iconify-icon></span>
+        <span class="nav-label">硬盘工具</span>
+      </div>
+      <div class="nav-item" data-page="peripheral" onclick="navigate(this)">
+        <span class="nav-icon"><iconify-icon icon="fluent:plug-disconnected-24-regular" width="20"></iconify-icon></span>
+        <span class="nav-label">外设工具</span>
+      </div>
+      <div class="nav-item" data-page="stress" onclick="navigate(this)">
+        <span class="nav-icon"><iconify-icon icon="fluent:temperature-24-regular" width="20"></iconify-icon></span>
+        <span class="nav-label">烤鸡工具</span>
+      </div>
+      <div class="nav-item" data-page="network" onclick="navigate(this)">
+        <span class="nav-icon"><iconify-icon icon="fluent:globe-24-regular" width="20"></iconify-icon></span>
+        <span class="nav-label">网络工具</span>
+      </div>
+      <div class="nav-item" data-page="other" onclick="navigate(this)">
+        <span class="nav-icon"><iconify-icon icon="fluent:apps-24-regular" width="20"></iconify-icon></span>
+        <span class="nav-label">其他工具</span>
+      </div>
+      <div class="nav-separator"></div>
+      <div class="nav-item" data-page="proxy" onclick="navigate(this)">
+        <span class="nav-icon"><iconify-icon icon="fluent:shield-checkmark-24-regular" width="20"></iconify-icon></span>
+        <span class="nav-label">代理工具</span>
+      </div>
+      <div class="nav-item" data-page="store" onclick="navigate(this)">
+        <span class="nav-icon"><iconify-icon icon="fluent:shopping-bag-24-regular" width="20"></iconify-icon></span>
+        <span class="nav-label">工具商店</span>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="nav-item" data-page="settings" onclick="navigate(this)">
+        <span class="nav-icon"><iconify-icon icon="fluent:settings-24-regular" width="20"></iconify-icon></span>
+        <span class="nav-label">设置</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Area -->
+  <div class="content-area" id="contentArea">
+    <!-- Pages will be rendered here -->
+  </div>
+</div>
+
+<!-- Download Footer -->
+<div class="download-footer" id="downloadFooter">
+  <progress id="dlProgress" value="0" max="100"></progress>
+  <span class="dl-text" id="dlText">正在下载...</span>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const tools = {
+  cpu: [
+    { icon: '<iconify-icon icon="fluent:brain-circuit-24-regular" width="24"></iconify-icon>', name: 'CPU-Z', desc: 'CPU 检测工具，查看详细处理器信息', action: 'cpu-z.exe' },
+    { icon: '<iconify-icon icon="fluent:chart-multiple-24-regular" width="24"></iconify-icon>', name: 'HWMonitor', desc: '硬件监控工具，实时查看温度电压', action: 'hwmonitor.exe' },
+    { icon: '<iconify-icon icon="fluent:flash-24-regular" width="24"></iconify-icon>', name: 'Cinebench', desc: 'CPU 性能跑分测试工具', action: 'cinebench.exe' },
+    { icon: '<iconify-icon icon="fluent:desktop-pulse-24-regular" width="24"></iconify-icon>', name: 'AIDA64', desc: '综合系统检测与压力测试工具', action: 'aida64.exe' },
+  ],
+  gpu: [
+    { icon: '<iconify-icon icon="fluent:video-24-regular" width="24"></iconify-icon>', name: 'GPU-Z', desc: '显卡检测工具，查看 GPU 详细信息', action: 'gpu-z.exe' },
+    { icon: '<iconify-icon icon="fluent:temperature-24-regular" width="24"></iconify-icon>', name: 'FurMark', desc: '显卡烤机与稳定性测试', action: 'furmark.exe' },
+    { icon: '<iconify-icon icon="fluent:trophy-24-regular" width="24"></iconify-icon>', name: '3DMark', desc: '专业显卡与游戏性能跑分', action: '3dmark.exe' },
+    { icon: '<iconify-icon icon="fluent:settings-24-regular" width="24"></iconify-icon>', name: 'MSI Afterburner', desc: '显卡超频与监控工具', action: 'afterburner.exe' },
+  ],
+  ram: [
+    { icon: '<iconify-icon icon="fluent:hard-drive-24-regular" width="24"></iconify-icon>', name: 'MemTest86', desc: '内存稳定性检测工具', action: 'memtest.exe' },
+    { icon: '<iconify-icon icon="fluent:info-24-regular" width="24"></iconify-icon>', name: 'Thaiphoon', desc: '内存颗粒与 SPD 信息查看', action: 'thaiphoon.exe' },
+  ],
+  disk: [
+    { icon: '<iconify-icon icon="fluent:storage-24-regular" width="24"></iconify-icon>', name: 'CrystalDiskMark', desc: '硬盘读写速度测试工具', action: 'crystaldiskmark.exe' },
+    { icon: '<iconify-icon icon="fluent:heart-pulse-24-regular" width="24"></iconify-icon>', name: 'CrystalDiskInfo', desc: '硬盘健康状态检测工具', action: 'crystaldiskinfo.exe' },
+    { icon: '<iconify-icon icon="fluent:partition-24-regular" width="24"></iconify-icon>', name: 'DiskGenius', desc: '磁盘分区与数据恢复工具', action: 'diskgenius.exe' },
+    { icon: '<iconify-icon icon="fluent:broom-24-regular" width="24"></iconify-icon>', name: 'SpaceSniffer', desc: '磁盘空间分析与清理工具', action: 'spacesniffer.exe' },
+  ],
+  peripheral: [
+    { icon: '<iconify-icon icon="fluent:plug-disconnected-24-regular" width="24"></iconify-icon>', name: 'MouseTester', desc: '鼠标回报率与延迟测试', action: 'mousetester.exe' },
+    { icon: '<iconify-icon icon="fluent:keyboard-24-regular" width="24"></iconify-icon>', name: 'KeyboardTest', desc: '键盘按键检测工具', action: 'keyboardtest.exe' },
+    { icon: '<iconify-icon icon="fluent:headphones-24-regular" width="24"></iconify-icon>', name: 'LatencyMon', desc: '音频延迟检测工具', action: 'latencymon.exe' },
+  ],
+  stress: [
+    { icon: '<iconify-icon icon="fluent:temperature-24-regular" width="24"></iconify-icon>', name: 'AIDA64 烤鸡', desc: 'CPU/GPU/内存综合压力测试', action: 'aida64.exe' },
+    { icon: '<iconify-icon icon="fluent:flash-24-regular" width="24"></iconify-icon>', name: 'Prime95', desc: 'CPU 满载压力测试', action: 'prime95.exe' },
+    { icon: '<iconify-icon icon="fluent:video-24-regular" width="24"></iconify-icon>', name: 'FurMark GPU', desc: 'GPU 满载烤机测试', action: 'furmark.exe' },
+  ],
+  network: [],
+  other: [
+    { icon: '<iconify-icon icon="fluent:notepad-24-regular" width="24"></iconify-icon>', name: 'Notepad++', desc: '高级文本编辑器', action: 'notepad++.exe' },
+    { icon: '<iconify-icon icon="fluent:archive-24-regular" width="24"></iconify-icon>', name: '7-Zip', desc: '高压缩率压缩工具', action: '7z.exe' },
+    { icon: '<iconify-icon icon="fluent:search-24-regular" width="24"></iconify-icon>', name: 'Everything', desc: '极速文件搜索工具', action: 'everything.exe' },
+  ]
+};
+
+let favorites = new Set();
+let currentPage = 'system';
+let history = [];
+
+function navigate(el) {
+  const page = el.dataset.page;
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  history.push(currentPage);
+  currentPage = page;
+  renderPage(page);
+}
+
+function goBack() {
+  if (history.length === 0) return;
+  currentPage = history.pop();
+  document.querySelectorAll('.nav-item').forEach(i => {
+    i.classList.toggle('active', i.dataset.page === currentPage);
+  });
+  renderPage(currentPage);
+}
+
+function renderPage(page) {
+  const area = document.getElementById('contentArea');
+  switch(page) {
+    case 'system': area.innerHTML = renderSystemInfo(); break;
+    case 'favorites': area.innerHTML = renderFavorites(); break;
+    case 'network': area.innerHTML = renderNetwork(); break;
+    case 'proxy': area.innerHTML = renderProxy(); break;
+    case 'store': area.innerHTML = renderStore(); break;
+    case 'settings': area.innerHTML = renderSettings(); break;
+    default: area.innerHTML = renderToolGrid(page);
+  }
+}
+
+function renderDonut(pct, color) {
+  return `<div class="donut-ring" style="background:conic-gradient(${color} ${pct}%, #e0e0e0 ${pct}%)">
+    <div style="width:72px;height:72px;border-radius:50%;background:var(--card-bg);display:flex;align-items:center;justify-content:center">
+      <span class="donut-pct">${pct}%</span>
+    </div>
+  </div>`;
+}
+
+function renderBar(pct, color, label) {
+  return `<div class="bar-item">
+    <span class="bar-label">${label}</span>
+    <div class="bar-track">
+      <div class="bar-fill" style="width:${pct}%;background:${color}">${pct}%</div>
+    </div>
+  </div>`;
+}
+
+function renderSystemInfo() {
+  return `
+    <div class="content-header">系统信息</div>
+    <div class="sysinfo-grid">
+      <div class="sysinfo-card">
+        <div class="label">处理器</div>
+        <div class="value">Intel Core i7-13700K</div>
+        <div class="sub">16 核 24 线程 / 3.4 GHz</div>
+      </div>
+      <div class="sysinfo-card">
+        <div class="label">显卡</div>
+        <div class="value">NVIDIA RTX 4070 Ti</div>
+        <div class="sub">12 GB GDDR6X / 537.42</div>
+      </div>
+      <div class="sysinfo-card">
+        <div class="label">内存</div>
+        <div class="value">32 GB DDR5</div>
+        <div class="sub">6000 MHz / 双通道</div>
+      </div>
+      <div class="sysinfo-card">
+        <div class="label">硬盘</div>
+        <div class="value">Samsung 980 PRO</div>
+        <div class="sub">1 TB NVMe / 7000 MB/s</div>
+      </div>
+    </div>
+    <div class="sysinfo-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="label" style="font-size:16px;font-weight:600;color:var(--text-primary)">资源使用</div>
+        <div class="chart-toggle">
+          <button class="chart-toggle-btn active" onclick="switchChart('donut', this)">环形图</button>
+          <button class="chart-toggle-btn" onclick="switchChart('bar', this)">横向条</button>
+        </div>
+      </div>
+      <div id="chartDonut" class="donut-container">
+        <div class="donut-item">
+          ${renderDonut(45, '#0078d4')}
+          <div class="donut-label">CPU</div>
+          <div class="donut-value">45%</div>
+        </div>
+        <div class="donut-item">
+          ${renderDonut(62, '#00a500')}
+          <div class="donut-label">内存</div>
+          <div class="donut-value">62%</div>
+        </div>
+        <div class="donut-item">
+          ${renderDonut(28, '#e81123')}
+          <div class="donut-label">GPU</div>
+          <div class="donut-value">28%</div>
+        </div>
+        <div class="donut-item">
+          ${renderDonut(55, '#ff8c00')}
+          <div class="donut-label">磁盘</div>
+          <div class="donut-value">55%</div>
+        </div>
+      </div>
+      <div id="chartBar" class="bar-container" style="display:none">
+        ${renderBar(45, '#0078d4', 'CPU')}
+        ${renderBar(62, '#00a500', '内存')}
+        ${renderBar(28, '#e81123', 'GPU')}
+        ${renderBar(55, '#ff8c00', '磁盘')}
+      </div>
+    </div>
+  `;
+}
+
+function switchChart(type, btn) {
+  document.querySelectorAll('.chart-toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('chartDonut').style.display = type === 'donut' ? 'flex' : 'none';
+  document.getElementById('chartBar').style.display = type === 'bar' ? 'flex' : 'none';
+}
+
+function renderFavorites() {
+  const favTools = [];
+  Object.entries(tools).forEach(([cat, list]) => {
+    list.forEach(t => { if (favorites.has(t.name)) favTools.push(t); });
+  });
+  if (favTools.length === 0) {
+    return `<div class="content-header">收藏夹</div>
+      <div style="text-align:center;color:var(--text-secondary);margin-top:60px">
+        <div style="font-size:48px;margin-bottom:16px">⭐</div>
+        <div>暂无收藏的工具</div>
+        <div style="font-size:13px;margin-top:8px">点击工具卡片右上角的星标收藏</div>
+      </div>`;
+  }
+  return `<div class="content-header">收藏夹</div><div class="tool-grid">${favTools.map(t => renderCard(t)).join('')}</div>`;
+}
+
+function renderToolGrid(page) {
+  const pageNames = {
+    cpu: 'CPU工具', gpu: '显卡工具', ram: '内存工具', disk: '硬盘工具',
+    peripheral: '外设工具', stress: '烤鸡工具', other: '其他工具'
+  };
+  const list = tools[page] || [];
+  if (list.length === 0) {
+    return `<div class="content-header">${pageNames[page]||page}</div>
+      <div style="text-align:center;color:var(--text-secondary);margin-top:60px">
+        <div style="font-size:48px;margin-bottom:16px">📂</div>
+        <div>暂无工具</div>
+      </div>`;
+  }
+  return `<div class="content-header">${pageNames[page]||page}</div>
+    <div class="tool-grid">${list.map(t => renderCard(t)).join('')}</div>`;
+}
+
+function renderCard(t) {
+  const isFav = favorites.has(t.name);
+  return `<div class="tool-card">
+    <div class="card-header">
+      <span class="card-icon">${t.icon}</span>
+      <span class="card-name">${t.name}</span>
+      <button class="card-fav ${isFav?'active':''}" onclick="toggleFav('${t.name}')"><iconify-icon icon="fluent:star-${isFav?'24-filled':'24-regular'}" width="18"></iconify-icon></button>
+    </div>
+    <div class="card-desc">${t.desc}</div>
+    <div class="card-footer">
+      <button class="card-btn" onclick="alert('启动 ${t.name}')">打开</button>
+    </div>
+  </div>`;
+}
+
+function toggleFav(name) {
+  if (favorites.has(name)) favorites.delete(name);
+  else favorites.add(name);
+  renderPage(currentPage);
+}
+
+function renderNetwork() {
+  return `
+    <div class="content-header">网络工具</div>
+    <div class="network-tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'ipPanel')">IP 查询</button>
+      <button class="tab-btn" onclick="switchTab(this,'splitPanel')">分流测试</button>
+      <button class="tab-btn" onclick="switchTab(this,'speedPanel')">网速测试</button>
+    </div>
+    <div id="ipPanel">
+      <div class="sysinfo-card">
+        <div class="label">当前 IP</div>
+        <div class="value" style="font-size:20px">114.114.114.114</div>
+        <div class="sub">中国 / 广东省 / 电信</div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="sysinfo-grid">
+          <div class="sysinfo-card">
+            <div class="label">ip.sb</div>
+            <div style="font-size:15px;margin-top:8px">114.114.114.114</div>
+          </div>
+          <div class="sysinfo-card">
+            <div class="label">ip-api.com</div>
+            <div style="font-size:15px;margin-top:8px">114.114.114.114</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="splitPanel" class="hidden">
+      <div class="sysinfo-card">
+        <div class="label">分流测试结果</div>
+        <div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--card-border)">
+            <span>cloudflare.com</span><span style="color:var(--accent)">104.16.132.229 (美国)</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--card-border)">
+            <span>www.bilibili.com</span><span style="color:var(--accent)">120.92.169.10 (中国)</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0">
+            <span>cn.bing.com</span><span style="color:var(--accent)">202.89.233.100 (中国)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="speedPanel" class="hidden">
+      <div class="sysinfo-card">
+        <div class="speed-display">
+          <div class="speed-value">96.5<span class="speed-unit">Mbps</span></div>
+          <div class="speed-label">下载速度</div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:60px;margin-top:16px">
+          <div style="text-align:center">
+            <div style="font-size:28px;font-weight:700;color:var(--accent)">42.3</div>
+            <div style="font-size:13px;color:var(--text-secondary)">上传 Mbps</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:28px;font-weight:700;color:var(--accent)">12</div>
+            <div style="font-size:13px;color:var(--text-secondary)">延迟 ms</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:28px;font-weight:700;color:var(--accent)">3</div>
+            <div style="font-size:13px;color:var(--text-secondary)">抖动 ms</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function switchTab(btn, panelId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['ipPanel','splitPanel','speedPanel'].forEach(id => {
+    document.getElementById(id).classList.toggle('hidden', id !== panelId);
+  });
+}
+
+function renderProxy() {
+  return `
+    <div class="content-header">代理工具</div>
+    <div class="proxy-status">
+      <div class="status-dot stopped"></div>
+      <span style="font-size:15px">代理状态：<strong>已停止</strong></span>
+    </div>
+    <div class="proxy-actions">
+      <button class="proxy-btn primary" onclick="alert('启动代理')">启动</button>
+      <button class="proxy-btn secondary" onclick="alert('上传配置')">上传配置</button>
+      <button class="proxy-btn secondary" onclick="alert('编辑配置')">编辑配置</button>
+    </div>
+    <div class="sysinfo-card">
+      <div class="label">配置信息</div>
+      <div style="margin-top:12px;font-size:13px;color:var(--text-secondary)">
+        <div>混合端口：7890</div>
+        <div>REST API：0.0.0.0:9097</div>
+        <div>Dashboard：http://127.0.0.1:19090/ui</div>
+        <div>模式：Rule</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderStore() {
+  const isInstalled = false;
+  return `
+    <div class="content-header">工具商店</div>
+    <div class="store-card">
+      <div class="store-icon"><iconify-icon icon="fluent:shield-checkmark-24-regular" width="28" style="color:#fff"></iconify-icon></div>
+      <div class="store-info">
+        <div class="store-name">ProxyTools</div>
+        <div class="store-desc">一个简易的代理工具插件，基于 Mihomo 内核</div>
+        <div class="store-meta">大小：~21 MB / 版本：v1.19.11</div>
+      </div>
+      <button class="card-btn ${isInstalled?'':'green'}" onclick="${isInstalled?"alert('打开代理工具')":"simulateDownload()"}">${isInstalled?'打开':'安装'}</button>
+    </div>
+  `;
+}
+
+function simulateDownload() {
+  const footer = document.getElementById('downloadFooter');
+  const progress = document.getElementById('dlProgress');
+  const text = document.getElementById('dlText');
+  footer.classList.add('show');
+  let val = 0;
+  const timer = setInterval(() => {
+    val += Math.random() * 15;
+    if (val >= 100) {
+      val = 100;
+      clearInterval(timer);
+      text.textContent = '下载完成！';
+      setTimeout(() => {
+        footer.classList.remove('show');
+        alert('ProxyTools 安装成功！');
+      }, 1000);
+    } else {
+      progress.value = val;
+      text.textContent = `${(val*0.21).toFixed(1)} / 21.0 MB (${Math.round(val)}%)`;
+    }
+  }, 300);
+}
+
+function renderSettings() {
+  return `
+    <div class="content-header">设置</div>
+    <div class="settings-section">
+      <div class="settings-section-title">关于</div>
+      <div class="settings-card">
+        <div style="font-size:22px;font-weight:700;color:var(--accent)">显卡吧工具箱 WinUI3</div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">v1.0.0</div>
+        <div style="margin-top:12px;font-size:13px;line-height:1.6">
+          显卡吧工具箱是一款面向 PC 硬件爱好者与 DIY 玩家的 Windows 桌面工具集，将各类硬件检测、性能测试、系统优化工具整合到统一的现代化界面中，开箱即用。
+        </div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">更新</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div style="display:flex;align-items:center">
+            <div class="settings-icon"><iconify-icon icon="fluent:arrow-sync-24-regular" width="22"></iconify-icon></div>
+            <div>
+              <div class="settings-label">检查更新</div>
+              <div class="settings-sub">点击检查新版本</div>
+            </div>
+          </div>
+          <button class="btn-settings" onclick="alert('正在检查更新...')">检查</button>
+        </div>
+      </div>
+      <div class="settings-card">
+        <div style="margin-bottom:8px">
+          <div style="display:flex;align-items:center">
+            <div class="settings-icon"><iconify-icon icon="fluent:globe-24-regular" width="22"></iconify-icon></div>
+            <div>
+              <div class="settings-label">下载代理</div>
+              <div class="settings-sub">GitHub 资源加速下载</div>
+            </div>
+          </div>
+        </div>
+        <input class="settings-input" id="proxyInput" value="https://ghfast.top/" placeholder="留空则直连 GitHub" oninput="debounceSaveProxy()">
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn-settings secondary" onclick="document.getElementById('proxyInput').value='https://ghfast.top/';showToast('已恢复默认代理')">恢复默认</button>
+        </div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">外观</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div style="display:flex;align-items:center">
+            <div class="settings-icon"><iconify-icon icon="fluent:color-24-regular" width="22"></iconify-icon></div>
+            <div>
+              <div class="settings-label">主题</div>
+              <div class="settings-sub">切换深浅皮肤</div>
+            </div>
+          </div>
+          <select class="settings-select" onchange="changeTheme(this.value);showToast('主题已切换')">
+            <option value="light">浅色模式</option>
+            <option value="dark">深色毛玻璃</option>
+            <option value="glass" selected>浅色毛玻璃</option>
+          </select>
+        </div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div style="display:flex;align-items:center">
+            <div class="settings-icon"><iconify-icon icon="fluent:chart-multiple-24-regular" width="22"></iconify-icon></div>
+            <div>
+              <div class="settings-label">占用图表样式</div>
+              <div class="settings-sub">切换硬件占用展示方式</div>
+            </div>
+          </div>
+          <select class="settings-select" onchange="showToast('图表样式已切换')">
+            <option selected>圆形图</option>
+            <option>横向进度条</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">配置管理</div>
+      <div class="settings-card">
+        <div style="margin-bottom:12px">
+          <div style="display:flex;align-items:center">
+            <div class="settings-icon"><iconify-icon icon="fluent:box-24-regular" width="22"></iconify-icon></div>
+            <div>
+              <div class="settings-label">工具管理</div>
+              <div class="settings-sub">管理工具配置</div>
+            </div>
+          </div>
+        </div>
+        <button class="btn-settings secondary" style="width:100%;margin-bottom:8px" onclick="showToast('已恢复默认工具列表')">恢复默认工具</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn-settings secondary" style="flex:1" onclick="showToast('工具配置已导出')">导出工具配置</button>
+          <button class="btn-settings secondary" style="flex:1" onclick="showToast('请选择配置文件')">导入工具配置</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+let proxySaveTimer;
+function debounceSaveProxy() {
+  clearTimeout(proxySaveTimer);
+  proxySaveTimer = setTimeout(() => showToast('代理地址已自动保存'), 800);
+}
+
+function changeTheme(theme) {
+  const r = document.documentElement.style;
+  if (theme === 'dark') {
+    r.setProperty('--bg', '#1e1e1e');
+    r.setProperty('--card-bg', '#2d2d2d');
+    r.setProperty('--card-border', '#404040');
+    r.setProperty('--text-primary', '#e0e0e0');
+    r.setProperty('--text-secondary', '#999');
+    r.setProperty('--nav-bg', '#252525');
+    r.setProperty('--nav-hover', '#333');
+    r.setProperty('--nav-active', '#3a3a3a');
+    r.setProperty('--title-bar', '#1e1e1e');
+  } else if (theme === 'light') {
+    r.setProperty('--bg', '#f3f3f3');
+    r.setProperty('--card-bg', '#ffffff');
+    r.setProperty('--card-border', '#e0e0e0');
+    r.setProperty('--text-primary', '#1a1a1a');
+    r.setProperty('--text-secondary', '#666');
+    r.setProperty('--nav-bg', '#f8f8f8');
+    r.setProperty('--nav-hover', '#e8e8e8');
+    r.setProperty('--nav-active', '#e0e0e0');
+    r.setProperty('--title-bar', '#f3f3f3');
+  } else {
+    r.setProperty('--bg', 'rgba(243,243,243,0.7)');
+    r.setProperty('--card-bg', 'rgba(255,255,255,0.6)');
+    r.setProperty('--card-border', 'rgba(255,255,255,0.3)');
+    r.setProperty('--text-primary', '#1a1a1a');
+    r.setProperty('--text-secondary', '#666');
+    r.setProperty('--nav-bg', 'rgba(248,248,248,0.7)');
+    r.setProperty('--nav-hover', 'rgba(232,232,232,0.7)');
+    r.setProperty('--nav-active', 'rgba(224,224,224,0.7)');
+    r.setProperty('--title-bar', 'rgba(243,243,243,0.7)');
+    document.body.style.backdropFilter = 'blur(20px)';
+  }
+}
+
+// Init
+renderPage('system');
+</script>
+</body>
+</html>
