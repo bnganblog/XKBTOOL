@@ -1,0 +1,13 @@
+CPUID:,0xA20F12
+Processor:,AMD Ryzen 5 5600 6-Core (Vermeer) 
+Platform:,Socket AM4 (1331 pin)
+Revision:,VMR-B2
+Lithography:,7nm
+
+Session start:,19:21:45 - April 07 - 2025
+
+Time,Core 0 Temp. (°),Core 1 Temp. (°),Core 2 Temp. (°),Core 3 Temp. (°),Core 4 Temp. (°),Core 5 Temp. (°),,Core 0,Low temp. (°),High temp. (°),Core load (%),Core speed (MHz),Core 1,Low temp. (°),High temp. (°),Core load (%),Core speed (MHz),Core 2,Low temp. (°),High temp. (°),Core load (%),Core speed (MHz),Core 3,Low temp. (°),High temp. (°),Core load (%),Core speed (MHz),Core 4,Low temp. (°),High temp. (°),Core load (%),Core speed (MHz),Core 5,Low temp. (°),High temp. (°),Core load (%),Core speed (MHz),CPU 0 Power,
+19:21:55 04/07/25,49,49,49,49,49,49,,,49,54,0,4650.01,,49,54,1,4650.01,,49,54,0,4650.01,,49,54,4,4650.01,,49,54,0,4650.01,,49,54,4,4650.01,40.6,
+
+Session end:,19:22:00 - April 07 - 2025
+

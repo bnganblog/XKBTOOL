@@ -1,0 +1,30 @@
+<->[NORMAL]#00000001#Sat Aug  3 17:19:00 2024#Geeks3D FurMark 1.38.1.0 is starting up...
+<->[NORMAL]#00000002#Sat Aug  3 17:19:00 2024#New FurMark 2 with OpenGL and Vulkan support: https://geeks3d.com/furmark/v2/
+<->[NORMAL]#00000003#Sat Aug  3 17:19:00 2024#Discord server: https://geeks3d.com/discord/
+<->[NORMAL]#00000004#Sat Aug  3 17:19:00 2024#FurMark folder: D:\图吧工具箱\图吧工具箱202408\tools\烤鸡工具\FurMark\
+<->[NORMAL]#00000005#Sat Aug  3 17:19:00 2024#Log file: D:\图吧工具箱\图吧工具箱202408\tools\烤鸡工具\FurMark\furmark_0001.txt
+<->[NORMAL]#00000006#Sat Aug  3 17:19:00 2024#CPU/System info:
+<->[NORMAL]#00000007#Sat Aug  3 17:19:00 2024#- CPU: Intel(R) Pentium(R) CPU G4560 @ 3.50GHz
+<->[NORMAL]#00000008#Sat Aug  3 17:19:01 2024#- CPU speed: 3503 MHz
+<->[NORMAL]#00000009#Sat Aug  3 17:19:01 2024#- System memory: 8055 MB
+<->[NORMAL]#00000010#Sat Aug  3 17:19:01 2024#- OS: Windows 10 64-bit build 19045
+<->[NORMAL]#00000011#Sat Aug  3 17:19:01 2024#Detecting GPUs...
+<->[NORMAL]#00000012#Sat Aug  3 17:19:01 2024#Found 1 GPUs.
+<->[NORMAL]#00000013#Sat Aug  3 17:19:01 2024#- GPU 1:  Intel(R) HD Graphics 610
+<->[NORMAL]#00000014#Sat Aug  3 17:19:01 2024#  - Cores: 96
+<->[NORMAL]#00000015#Sat Aug  3 17:19:01 2024#  - Memory size: 1024MB
+<->[NORMAL]#00000016#Sat Aug  3 17:19:01 2024#  - Memory type: 
+<->[NORMAL]#00000017#Sat Aug  3 17:19:01 2024#  - TDP: 5W
+<->[NORMAL]#00000018#Sat Aug  3 17:19:01 2024#  - Bus ID: -1
+<->[NORMAL]#00000019#Sat Aug  3 17:19:01 2024#  - Bios: Intel Video BIOS
+<->[NORMAL]#00000020#Sat Aug  3 17:19:01 2024#  - Graphics driver: 31.0.101.2121
+<->[NORMAL]#00000021#Sat Aug  3 17:19:01 2024#GPU monitoring thread started up ok.
+<->[NORMAL]#00000022#Sat Aug  3 17:19:01 2024#oZone3D Engine is starting up - kernel build: [v3.4.3 - Jan 16 2023 @ 20:43:01] - codename: Kantalium
+<->[NORMAL]#00000023#Sat Aug  3 17:19:01 2024#oZone3D initialization in progress...
+<->[NORMAL]#00000024#Sat Aug  3 17:19:01 2024#oZone3D - OpenGL renderer creation ok.
+<->[NORMAL]#00000025#Sat Aug  3 17:19:01 2024#o3RendererOpenGL INFO: OpenGL version: 4.6.0 - Build 31.0.101.2121
+<->[NORMAL]#00000026#Sat Aug  3 17:19:01 2024#o3RendererOpenGL INFO: OpenGL Shading Language (GLSL) version: 4.60 - Build 31.0.101.2121
+<->[NORMAL]#00000027#Sat Aug  3 17:19:01 2024#oZone3D initialization ok.
+<->[NORMAL]#00000028#Sat Aug  3 17:19:01 2024#Render thread - affinity mask set to 0
+<->[NORMAL]#00000029#Sat Aug  3 17:19:23 2024#oZone3D shutdown ok.
+<->[NORMAL]#00000030#Sat Aug  3 17:19:23 2024#Geeks3D FurMark shutdown OK.

@@ -1,0 +1,26 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.vs/
+*.nupkg
+
+## IDE
+.idea/
+*.swp
+*.sln.docstates
+
+## Build
+packages/
+*.nupkg
+
+## OS
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+## WinUI
+*.pfx
+*.cer

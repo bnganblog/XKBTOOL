@@ -1,0 +1,191 @@
+[
+  {
+    "Icon": "tools\\\u5904\u7406\u5668\u5DE5\u5177\\CPUZ\\cpuz_x64.exe",
+    "Name": "CPU-Z",
+    "Description": "CPU \u68C0\u6D4B\u5DE5\u5177",
+    "Action": "tools\\\u5904\u7406\u5668\u5DE5\u5177\\CPUZ\\cpuz_x64.exe",
+    "Category": "CPU\u5DE5\u5177"
+  },
+  {
+    "Icon": "icon\\gpuz.png",
+    "Name": "GPU-Z",
+    "Description": "\u663E\u5361\u68C0\u6D4B\u5DE5\u5177",
+    "Action": "msg:\u8BF7\u5148\u5B89\u88C5 GPU-Z",
+    "Category": "\u663E\u5361\u5DE5\u5177"
+  },
+  {
+    "Icon": "C:\\WINDOWS\\System32\\diskmgmt.msc",
+    "Name": "\u78C1\u76D8\u7BA1\u7406",
+    "Description": "Windows \u78C1\u76D8\u7BA1\u7406",
+    "Action": "diskmgmt.msc",
+    "Category": "\u786C\u76D8\u5DE5\u5177"
+  },
+  {
+    "Icon": "C:\\WINDOWS\\System32\\devmgmt.msc",
+    "Name": "\u8BBE\u5907\u7BA1\u7406\u5668",
+    "Description": "\u7BA1\u7406\u786C\u4EF6\u8BBE\u5907\u9A71\u52A8",
+    "Action": "devmgmt.msc",
+    "Category": "\u5916\u8BBE\u5DE5\u5177"
+  },
+  {
+    "Icon": "C:\\WINDOWS\\System32\\Taskmgr.exe",
+    "Name": "\u4EFB\u52A1\u7BA1\u7406\u5668",
+    "Description": "\u67E5\u770B\u7CFB\u7EDF\u8FDB\u7A0B\u4E0E\u6027\u80FD",
+    "Action": "taskmgr.exe",
+    "Category": "CPU\u5DE5\u5177"
+  },
+  {
+    "Icon": "C:\\WINDOWS\\System32\\dxdiag.exe",
+    "Name": "DirectX\u8BCA\u65AD",
+    "Description": "DirectX \u8BCA\u65AD\u5DE5\u5177",
+    "Action": "dxdiag.exe",
+    "Category": "\u663E\u5361\u5DE5\u5177"
+  },
+  {
+    "Icon": "C:\\WINDOWS\\System32\\msinfo32.exe",
+    "Name": "\u7CFB\u7EDF\u4FE1\u606F",
+    "Description": "\u67E5\u770B\u8BE6\u7EC6\u7CFB\u7EDF\u4FE1\u606F",
+    "Action": "msinfo32.exe",
+    "Category": "CPU\u5DE5\u5177"
+  },
+  {
+    "Icon": "C:\\WINDOWS\\System32\\regedit.exe",
+    "Name": "\u6CE8\u518C\u8868\u7F16\u8F91\u5668",
+    "Description": "Windows \u6CE8\u518C\u8868\u7F16\u8F91",
+    "Action": "regedit.exe",
+    "Category": "\u5176\u4ED6\u5DE5\u5177"
+  },
+  {
+    "Icon": "icon\\aida64.png",
+    "Name": "AIDA64",
+    "Description": "\u7EFC\u5408\u786C\u4EF6\u70E4\u673A\u5DE5\u5177",
+    "Action": "msg:\u8BF7\u5148\u5B89\u88C5 AIDA64",
+    "Category": "\u70E4\u9E21\u5DE5\u5177"
+  },
+  {
+    "Icon": "icon\\prime95.png",
+    "Name": "Prime95",
+    "Description": "CPU \u538B\u529B\u6D4B\u8BD5",
+    "Action": "msg:\u8BF7\u5148\u5B89\u88C5 Prime95",
+    "Category": "\u70E4\u9E21\u5DE5\u5177"
+  },
+  {
+    "Icon": "icon\\furmark.png",
+    "Name": "FurMark",
+    "Description": "GPU \u538B\u529B\u6D4B\u8BD5",
+    "Action": "msg:\u8BF7\u5148\u5B89\u88C5 FurMark",
+    "Category": "\u70E4\u9E21\u5DE5\u5177"
+  },
+  {
+    "Icon": "icon\\3dmark.png",
+    "Name": "3DMark",
+    "Description": "\u663E\u5361\u6027\u80FD\u57FA\u51C6\u6D4B\u8BD5",
+    "Action": "msg:\u8BF7\u5148\u5B89\u88C5 3DMark",
+    "Category": "\u70E4\u9E21\u5DE5\u5177"
+  },
+  {
+    "Icon": "icon\\memtest.png",
+    "Name": "MemTest86",
+    "Description": "\u5185\u5B58\u7A33\u5B9A\u6027\u6D4B\u8BD5",
+    "Action": "msg:\u8BF7\u5148\u5B89\u88C5 MemTest86",
+    "Category": "\u70E4\u9E21\u5DE5\u5177"
+  },
+  {
+    "Icon": "C:\\WINDOWS\\System32\\cmd.exe",
+    "Name": "Ping\u6D4B\u8BD5",
+    "Description": "\u6D4B\u8BD5\u7F51\u7EDC\u8FDE\u901A\u6027",
+    "Action": "cmd:ping www.baidu.com",
+    "Category": "\u7F51\u7EDC\u5DE5\u5177"
+  },
+  {
+    "Icon": "C:\\WINDOWS\\System32\\cmd.exe",
+    "Name": "IP\u914D\u7F6E",
+    "Description": "\u67E5\u770B\u7F51\u7EDC\u914D\u7F6E\u4FE1\u606F",
+    "Action": "cmd:ipconfig /all",
+    "Category": "\u7F51\u7EDC\u5DE5\u5177"
+  },
+  {
+    "Icon": "C:\\WINDOWS\\System32\\cmd.exe",
+    "Name": "\u7F51\u7EDC\u8FDE\u63A5",
+    "Description": "\u67E5\u770B\u5F53\u524D\u7F51\u7EDC\u8FDE\u63A5",
+    "Action": "cmd:netstat -an",
+    "Category": "\u7F51\u7EDC\u5DE5\u5177"
+  },
+  {
+    "Icon": "icon\\clean.png",
+    "Name": "\u6E05\u7406\u5783\u573E\u6587\u4EF6",
+    "Description": "\u6E05\u7406\u7CFB\u7EDF\u4E34\u65F6\u6587\u4EF6",
+    "Action": "msg:\u6E05\u7406\u529F\u80FD\u5F00\u53D1\u4E2D...",
+    "Category": "\u5176\u4ED6\u5DE5\u5177"
+  },
+  {
+    "Icon": "icon\\startup.png",
+    "Name": "\u542F\u52A8\u9879\u7BA1\u7406",
+    "Description": "\u7BA1\u7406\u5F00\u673A\u542F\u52A8\u9879",
+    "Action": "msg:\u542F\u52A8\u9879\u7BA1\u7406\u5F00\u53D1\u4E2D...",
+    "Category": "\u5176\u4ED6\u5DE5\u5177"
+  },
+  {
+    "Icon": "C:\\WINDOWS\\System32\\notepad.exe",
+    "Name": "\u8BB0\u4E8B\u672C",
+    "Description": "Windows \u6587\u672C\u7F16\u8F91\u5668",
+    "Action": "notepad.exe",
+    "Category": "\u5176\u4ED6\u5DE5\u5177"
+  },
+  {
+    "Icon": "C:\\WINDOWS\\System32\\calc.exe",
+    "Name": "\u8BA1\u7B97\u5668",
+    "Description": "Windows \u8BA1\u7B97\u5668",
+    "Action": "calc.exe",
+    "Category": "\u5176\u4ED6\u5DE5\u5177"
+  },
+  {
+    "Icon": "C:\\WINDOWS\\System32\\mspaint.exe",
+    "Name": "\u753B\u56FE\u5DE5\u5177",
+    "Description": "Windows \u753B\u56FE\u5DE5\u5177",
+    "Action": "mspaint.exe",
+    "Category": "\u5176\u4ED6\u5DE5\u5177"
+  },
+  {
+    "Icon": "C:\\WINDOWS\\System32\\cmd.exe",
+    "Name": "\u547D\u4EE4\u63D0\u793A\u7B26",
+    "Description": "CMD \u547D\u4EE4\u884C\u5DE5\u5177",
+    "Action": "cmd.exe",
+    "Category": "\u5176\u4ED6\u5DE5\u5177"
+  },
+  {
+    "Icon": "C:\\WINDOWS\\System32\\control.exe",
+    "Name": "\u63A7\u5236\u9762\u677F",
+    "Description": "Windows \u63A7\u5236\u9762\u677F",
+    "Action": "control.exe",
+    "Category": "\u5176\u4ED6\u5DE5\u5177"
+  },
+  {
+    "Icon": "icon\\store.png",
+    "Name": "\u9A71\u52A8\u7BA1\u7406",
+    "Description": "\u9A71\u52A8\u5B89\u88C5\u4E0E\u66F4\u65B0",
+    "Action": "msg:\u5373\u5C06\u63A8\u51FA",
+    "Category": "\u5DE5\u5177\u5546\u5E97"
+  },
+  {
+    "Icon": "icon\\store.png",
+    "Name": "\u7CFB\u7EDF\u5907\u4EFD",
+    "Description": "\u7CFB\u7EDF\u5907\u4EFD\u4E0E\u8FD8\u539F",
+    "Action": "msg:\u5373\u5C06\u63A8\u51FA",
+    "Category": "\u5DE5\u5177\u5546\u5E97"
+  },
+  {
+    "Icon": "icon\\store.png",
+    "Name": "\u6570\u636E\u6062\u590D",
+    "Description": "\u6587\u4EF6\u6570\u636E\u6062\u590D\u5DE5\u5177",
+    "Action": "msg:\u5373\u5C06\u63A8\u51FA",
+    "Category": "\u5DE5\u5177\u5546\u5E97"
+  },
+  {
+    "Icon": "icon\\store.png",
+    "Name": "\u8FDC\u7A0B\u684C\u9762",
+    "Description": "\u8FDC\u7A0B\u8FDE\u63A5\u5DE5\u5177",
+    "Action": "msg:\u5373\u5C06\u63A8\u51FA",
+    "Category": "\u5DE5\u5177\u5546\u5E97"
+  }
+]

@@ -1,0 +1,61 @@
+========= TestMem5 Log File =========
+Customize: Default @serj
+Start testing at 3:10, 1Gb x12
+
+
+========= TestMem5 Log File =========
+Customize: Default @serj
+Start testing at 20:19, 2.1Gb x12
+
+
+========= TestMem5 Log File =========
+Customize: Default @serj
+The program in compatibility mode,
+need to run with Administrator privileges!
+Start testing at 12:32, 880Mb x31
+Error in test #0 through 11 sec.
+
+
+========= TestMem5 Log File =========
+Customize: Default @serj
+The program in compatibility mode,
+need to run with Administrator privileges!
+Start testing at 12:33, 912Mb x31
+Error in test #2 through 3 sec.
+
+
+========= TestMem5 Log File =========
+Customize: Default @serj
+The program in compatibility mode,
+need to run with Administrator privileges!
+Start testing at 12:22, 912Mb x30
+Testing completed in 8m 31s, no errors.
+ 
+
+
+========= TestMem5 Log File =========
+Customize: Default @serj
+The program in compatibility mode,
+need to run with Administrator privileges!
+Start testing at 10:38, 880Mb x14
+Testing completed in 3m 5s, no errors.
+ 
+
+
+========= TestMem5 Log File =========
+Customize: Default @serj
+The program in compatibility mode,
+need to run with Administrator privileges!
+Start testing at 18:43, 912Mb x14
+
+
+========= TestMem5 Log File =========
+Customize: Default @serj
+The program in compatibility mode,
+need to run with Administrator privileges!
+Start testing at 19:34, 928Mb x14
+
+
+========= TestMem5 Log File =========
+Customize: Default @serj
+Start testing at 20:13, 976Mb x12
