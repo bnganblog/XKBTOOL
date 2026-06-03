@@ -24,3 +24,8 @@ Desktop.ini
 ## WinUI
 *.pfx
 *.cer
+
+## Archives
+*.zip
+*.7z
+*.rar

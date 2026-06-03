@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Management;
@@ -2023,7 +2023,17 @@ public sealed partial class MainWindow : Window
         openBtn.Click += (s, e) =>
         {
             if (isInstalled)
-                ShowProxyTools();
+            {
+                if (_navProxyItem != null)
+                {
+                    navView.SelectedItem = _navProxyItem;
+                    LoadContent("proxy");
+                }
+                else
+                {
+                    ShowProxyTools();
+                }
+            }
             else
                 ExecuteToolAction(tool.Action);
         };
@@ -2225,6 +2235,11 @@ public sealed partial class MainWindow : Window
             downloadFooter.Visibility = Visibility.Collapsed;
             ShowMessageDialog("ProxyTools 安装成功！请重启应用或等待几秒，左侧导航栏将出现「代理工具」。");
             UpdateProxyNavItem();
+            if (_navProxyItem != null)
+            {
+                navView.SelectedItem = _navProxyItem;
+                LoadContent("proxy");
+            }
         }
         catch (HttpRequestException)
         {
