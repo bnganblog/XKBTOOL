@@ -13,7 +13,7 @@
         <!-- Project Options -->
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
-        <ApplicationDisplayVersion>1.1.0</ApplicationDisplayVersion>
+        <ApplicationDisplayVersion>1.2.0</ApplicationDisplayVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>ToolboxWinUI</RootNamespace>
 

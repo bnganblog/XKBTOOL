@@ -144,7 +144,7 @@ public sealed partial class MainWindow : Window
     private static readonly string FavoritesFile = Path.Combine(DataDir, "favorites.json");
     private static readonly string ToolsFile = Path.Combine(DataDir, "tools.json");
     private static readonly string ConfigVersionFile = Path.Combine(DataDir, "config.version");
-    private static readonly string CurrentConfigVersion = "1.1.0";
+    private static readonly string CurrentConfigVersion = "1.2.0";
 
     private NavigationViewItem _navProxyItem;
     private NavigationViewItem _navAcceleratorItem;
