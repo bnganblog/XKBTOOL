@@ -47,8 +47,13 @@ public static class DomainConfig
             "gew4-spclient.spotify.com",
             "gae2-spclient.spotify.com",
             "audio-fa.spotifycdn.com",
+            "audio-ec.spotify.com",
             "encore.scdn.co",
             "i.scdn.co",
+            "p.scdn.co",
+            "r.scdn.co",
+            "t.scdn.co",
+            "u.scdn.co",
             "download.scdn.co",
             "partner.scdn.co"
         },
