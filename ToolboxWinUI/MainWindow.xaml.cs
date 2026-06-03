@@ -2117,6 +2117,7 @@ public sealed partial class MainWindow : Window
         var bottomRow = new Grid { Margin = new Thickness(0, 12, 0, 0) };
         bottomRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         bottomRow.ColumnDefinitions.Add(new ColumnDefinition());
+        bottomRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var settingsBtn = new Border
         {
@@ -2185,6 +2186,43 @@ public sealed partial class MainWindow : Window
                 ExecuteToolAction(tool.Action);
         };
         Grid.SetColumn(openBtn, 1);
+
+        if (isStoreDl && isInstalled)
+        {
+            var uninstallBtn = new Button
+            {
+                Content = "卸载",
+                FontSize = 13,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Padding = new Thickness(16, 6, 16, 6),
+                Background = new SolidColorBrush(WColor.FromArgb(255, 232, 17, 35)),
+                Foreground = new SolidColorBrush(WColor.FromArgb(255, 255, 255, 255)),
+                BorderThickness = new Thickness(0),
+                Margin = new Thickness(8, 0, 0, 0),
+                Tag = tool
+            };
+            uninstallBtn.Click += async (s, e) =>
+            {
+                if (pluginName == null || !PluginConfigs.TryGetValue(pluginName, out var ucfg)) return;
+                var targetDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
+                    string.IsNullOrEmpty(ucfg.extractFolder) ? pluginName : ucfg.extractFolder);
+                try
+                {
+                    if (Directory.Exists(targetDir))
+                        Directory.Delete(targetDir, true);
+                    UpdateProxyNavItem();
+                    UpdateAcceleratorNavItem();
+                    ShowMessageDialog($"{ucfg.displayName} 已卸载。");
+                }
+                catch (Exception ex)
+                {
+                    ShowMessageDialog($"卸载失败: {ex.Message}");
+                }
+                LoadContent(GetCurrentTag());
+            };
+            Grid.SetColumn(uninstallBtn, 2);
+            bottomRow.Children.Add(uninstallBtn);
+        }
 
         bottomRow.Children.Add(settingsBtn);
         bottomRow.Children.Add(openBtn);
