@@ -43,6 +43,11 @@
         <Compile Remove="AcceleratorHelper\**" />
     </ItemGroup>
 
+    <!-- 排除 AcceleratorHelper 源文件（但保留 DLL 引用） -->
+    <ItemGroup>
+        <Compile Remove="AcceleratorHelper\**" />
+    </ItemGroup>
+
     <ItemGroup>
         <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.*" />
         <PackageReference Include="Microsoft.Web.WebView2" Version="1.*" />
@@ -53,6 +58,8 @@
 
         <Manifest Include="$(ApplicationManifest)" />
     </ItemGroup>
+
+    <!-- AcceleratorHelper 独立项目，不编译进主程序 -->
 
     <!-- 
         Defining the "Msix" ProjectCapability here allows the Single-project MSIX Packaging

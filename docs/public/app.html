@@ -8,20 +8,21 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
-  --accent: #0078d4;
-  --accent-hover: #1a86d9;
-  --bg: #f3f3f3;
-  --card-bg: #ffffff;
-  --card-border: #e0e0e0;
-  --text-primary: #1a1a1a;
-  --text-secondary: #666;
-  --nav-bg: #f8f8f8;
-  --nav-hover: #e8e8e8;
-  --nav-active: #e0e0e0;
-  --title-bar: #f3f3f3;
+  --accent: #7c3aed;
+  --accent-hover: #8b5cf6;
+  --bg: #0c0c12;
+  --card-bg: #16161d;
+  --card-border: rgba(255,255,255,0.08);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --nav-bg: #111118;
+  --nav-hover: rgba(255,255,255,0.06);
+  --nav-active: rgba(124,58,237,0.15);
+  --title-bar: #09090b;
   --sidebar-width: 260px;
   --title-height: 40px;
 }
+html { background: var(--bg); }
 body {
   font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: var(--bg);
@@ -41,7 +42,7 @@ body {
   -webkit-app-region: drag;
   user-select: none;
   flex-shrink: 0;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 .title-bar .back-btn {
   width: 40px;
@@ -74,7 +75,7 @@ body {
 .sidebar {
   width: var(--sidebar-width);
   background: var(--nav-bg);
-  border-right: 1px solid rgba(0,0,0,0.06);
+  border-right: 1px solid rgba(255,255,255,0.06);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -122,7 +123,7 @@ body {
 }
 .sidebar-footer {
   padding: 4px;
-  border-top: 1px solid rgba(0,0,0,0.06);
+  border-top: 1px solid rgba(255,255,255,0.06);
 }
 .sidebar-footer .nav-item .nav-icon { font-size: 16px; }
 /* Content Area */
@@ -153,7 +154,7 @@ body {
   flex-direction: column;
   transition: box-shadow 0.2s;
 }
-.tool-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.tool-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
 .card-header {
   display: flex;
   align-items: flex-start;
@@ -290,7 +291,7 @@ body {
 .bar-track {
   flex: 1;
   height: 24px;
-  background: #e0e0e0;
+  background: rgba(255,255,255,0.08);
   border-radius: 12px;
   overflow: hidden;
   position: relative;
@@ -409,7 +410,7 @@ body {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #ccc;
+  background: #444;
 }
 .status-dot.running { background: #00a500; }
 .status-dot.stopped { background: #e81123; }
@@ -523,7 +524,7 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 8px;
-  background: rgba(0,0,0,0.04);
+  background: rgba(255,255,255,0.06);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -766,7 +767,7 @@ function renderPage(page) {
 }
 
 function renderDonut(pct, color) {
-  return `<div class="donut-ring" style="background:conic-gradient(${color} ${pct}%, #e0e0e0 ${pct}%)">
+  return `<div class="donut-ring" style="background:conic-gradient(${color} ${pct}%, rgba(255,255,255,0.08) ${pct}%)">
     <div style="width:72px;height:72px;border-radius:50%;background:var(--card-bg);display:flex;align-items:center;justify-content:center">
       <span class="donut-pct">${pct}%</span>
     </div>
@@ -1171,35 +1172,38 @@ function debounceSaveProxy() {
 function changeTheme(theme) {
   const r = document.documentElement.style;
   if (theme === 'dark') {
-    r.setProperty('--bg', '#1e1e1e');
-    r.setProperty('--card-bg', '#2d2d2d');
-    r.setProperty('--card-border', '#404040');
-    r.setProperty('--text-primary', '#e0e0e0');
-    r.setProperty('--text-secondary', '#999');
-    r.setProperty('--nav-bg', '#252525');
-    r.setProperty('--nav-hover', '#333');
-    r.setProperty('--nav-active', '#3a3a3a');
-    r.setProperty('--title-bar', '#1e1e1e');
+    r.setProperty('--bg', '#0c0c12');
+    r.setProperty('--card-bg', '#16161d');
+    r.setProperty('--card-border', 'rgba(255,255,255,0.08)');
+    r.setProperty('--text-primary', '#f1f5f9');
+    r.setProperty('--text-secondary', '#94a3b8');
+    r.setProperty('--nav-bg', '#111118');
+    r.setProperty('--nav-hover', 'rgba(255,255,255,0.06)');
+    r.setProperty('--nav-active', 'rgba(124,58,237,0.15)');
+    r.setProperty('--title-bar', '#09090b');
+    r.setProperty('--accent', '#7c3aed');
   } else if (theme === 'light') {
-    r.setProperty('--bg', '#f3f3f3');
-    r.setProperty('--card-bg', '#ffffff');
-    r.setProperty('--card-border', '#e0e0e0');
-    r.setProperty('--text-primary', '#1a1a1a');
-    r.setProperty('--text-secondary', '#666');
-    r.setProperty('--nav-bg', '#f8f8f8');
-    r.setProperty('--nav-hover', '#e8e8e8');
-    r.setProperty('--nav-active', '#e0e0e0');
-    r.setProperty('--title-bar', '#f3f3f3');
+    r.setProperty('--bg', '#0c0c12');
+    r.setProperty('--card-bg', '#16161d');
+    r.setProperty('--card-border', 'rgba(255,255,255,0.08)');
+    r.setProperty('--text-primary', '#f1f5f9');
+    r.setProperty('--text-secondary', '#94a3b8');
+    r.setProperty('--nav-bg', '#111118');
+    r.setProperty('--nav-hover', 'rgba(255,255,255,0.06)');
+    r.setProperty('--nav-active', 'rgba(124,58,237,0.15)');
+    r.setProperty('--title-bar', '#09090b');
+    r.setProperty('--accent', '#7c3aed');
   } else {
-    r.setProperty('--bg', 'rgba(243,243,243,0.7)');
-    r.setProperty('--card-bg', 'rgba(255,255,255,0.6)');
-    r.setProperty('--card-border', 'rgba(255,255,255,0.3)');
-    r.setProperty('--text-primary', '#1a1a1a');
-    r.setProperty('--text-secondary', '#666');
-    r.setProperty('--nav-bg', 'rgba(248,248,248,0.7)');
-    r.setProperty('--nav-hover', 'rgba(232,232,232,0.7)');
-    r.setProperty('--nav-active', 'rgba(224,224,224,0.7)');
-    r.setProperty('--title-bar', 'rgba(243,243,243,0.7)');
+    r.setProperty('--bg', '#0c0c12');
+    r.setProperty('--card-bg', 'rgba(22,22,29,0.7)');
+    r.setProperty('--card-border', 'rgba(255,255,255,0.08)');
+    r.setProperty('--text-primary', '#f1f5f9');
+    r.setProperty('--text-secondary', '#94a3b8');
+    r.setProperty('--nav-bg', 'rgba(17,17,24,0.7)');
+    r.setProperty('--nav-hover', 'rgba(255,255,255,0.06)');
+    r.setProperty('--nav-active', 'rgba(124,58,237,0.15)');
+    r.setProperty('--title-bar', 'rgba(9,9,11,0.7)');
+    r.setProperty('--accent', '#7c3aed');
     document.body.style.backdropFilter = 'blur(20px)';
   }
 }
@@ -1222,27 +1226,27 @@ window.addEventListener('message', function(e) {
 function applyTheme(theme) {
   const r = document.documentElement.style;
   if (theme === 'dark') {
-    r.setProperty('--bg', '#1e1e1e');
-    r.setProperty('--card-bg', '#2d2d2d');
-    r.setProperty('--card-border', '#404040');
-    r.setProperty('--text-primary', '#e0e0e0');
-    r.setProperty('--text-secondary', '#999');
-    r.setProperty('--nav-bg', '#252525');
-    r.setProperty('--nav-hover', '#333');
-    r.setProperty('--nav-active', '#3a3a3a');
-    r.setProperty('--title-bar', '#1e1e1e');
-    r.setProperty('--accent', '#4cc2ff');
+    r.setProperty('--bg', '#0c0c12');
+    r.setProperty('--card-bg', '#16161d');
+    r.setProperty('--card-border', 'rgba(255,255,255,0.08)');
+    r.setProperty('--text-primary', '#f1f5f9');
+    r.setProperty('--text-secondary', '#94a3b8');
+    r.setProperty('--nav-bg', '#111118');
+    r.setProperty('--nav-hover', 'rgba(255,255,255,0.06)');
+    r.setProperty('--nav-active', 'rgba(124,58,237,0.15)');
+    r.setProperty('--title-bar', '#09090b');
+    r.setProperty('--accent', '#7c3aed');
   } else {
-    r.setProperty('--bg', '#f3f3f3');
-    r.setProperty('--card-bg', '#ffffff');
-    r.setProperty('--card-border', '#e0e0e0');
-    r.setProperty('--text-primary', '#1a1a1a');
-    r.setProperty('--text-secondary', '#666');
-    r.setProperty('--nav-bg', '#f8f8f8');
-    r.setProperty('--nav-hover', '#e8e8e8');
-    r.setProperty('--nav-active', '#e0e0e0');
-    r.setProperty('--title-bar', '#f3f3f3');
-    r.setProperty('--accent', '#0078d4');
+    r.setProperty('--bg', '#0c0c12');
+    r.setProperty('--card-bg', '#16161d');
+    r.setProperty('--card-border', 'rgba(255,255,255,0.08)');
+    r.setProperty('--text-primary', '#f1f5f9');
+    r.setProperty('--text-secondary', '#94a3b8');
+    r.setProperty('--nav-bg', '#111118');
+    r.setProperty('--nav-hover', 'rgba(255,255,255,0.06)');
+    r.setProperty('--nav-active', 'rgba(124,58,237,0.15)');
+    r.setProperty('--title-bar', '#09090b');
+    r.setProperty('--accent', '#7c3aed');
   }
 }
 

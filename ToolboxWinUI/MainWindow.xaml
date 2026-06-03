@@ -104,7 +104,7 @@
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="navDisk" Content="硬盘工具" Tag="硬盘工具">
                     <NavigationViewItem.Icon>
-                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE7F1;"/>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xEDA2;"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="navPeripheral" Content="外设工具" Tag="外设工具">
