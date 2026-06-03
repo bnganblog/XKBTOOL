@@ -78,16 +78,25 @@ public class AcceleratorService
 
         _hostsManager.BackupHosts();
 
-        var nonGitHubDomains = _domains.Where(d => !d.Contains("github")).ToArray();
-        _hostsManager.AddEntries(nonGitHubDomains);
-        AddLog("INFO", $"已添加 {nonGitHubDomains.Length} 条代理 hosts 条目");
-
         var githubDomains = _domains.Where(d => d.Contains("github")).ToArray();
+        var steamDomains = _domains.Where(d => d.Contains("steam")).ToArray();
+        var nonProxyDomains = _domains.Where(d => !d.Contains("github") && !d.Contains("steam")).ToArray();
+
+        _hostsManager.AddEntries(nonProxyDomains);
+        AddLog("INFO", $"已添加 {nonProxyDomains.Length} 条代理 hosts 条目");
+
         if (githubDomains.Length > 0)
         {
             var ghHosts = GetGitHubHosts();
             _hostsManager.AddGitHubHosts(ghHosts);
             AddLog("INFO", $"已添加 {ghHosts.Count} 条 GitHub Hosts");
+        }
+
+        if (steamDomains.Length > 0)
+        {
+            var steamHosts = GetSteamHosts();
+            _hostsManager.AddSteamHosts(steamHosts);
+            AddLog("INFO", $"已添加 {steamHosts.Count} 条 Steam Hosts");
         }
 
         _host = CreateHost();
@@ -193,6 +202,23 @@ public class AcceleratorService
             ("185.199.109.153", "assets-cdn.github.com"),
             ("185.199.110.153", "assets-cdn.github.com"),
             ("185.199.111.153", "assets-cdn.github.com"),
+        };
+    }
+
+    private static List<(string Ip, string Domain)> GetSteamHosts()
+    {
+        return new List<(string Ip, string Domain)>
+        {
+            ("23.61.106.105", "steamcommunity.com"),
+            ("23.212.9.147", "www.steamcommunity.com"),
+            ("23.14.141.208", "store.steampowered.com"),
+            ("23.61.106.105", "api.steampowered.com"),
+            ("23.61.106.105", "help.steampowered.com"),
+            ("23.48.99.11", "store.akamai.steamstatic.com"),
+            ("23.54.76.12", "steamcdn-a.akamaihd.net"),
+            ("23.48.99.23", "cdn.akamai.steamstatic.com"),
+            ("23.212.9.147", "steam-chat.com"),
+            ("23.48.99.9", "community.akamai.steamstatic.com"),
         };
     }
 
