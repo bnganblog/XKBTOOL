@@ -878,9 +878,24 @@ public sealed partial class MainWindow : Window
     {
         try
         {
+            var proxyPrefix = App.DownloadProxy;
+            var urls = string.IsNullOrEmpty(proxyPrefix)
+                ? new[] { PluginsJsonUrl }
+                : new[] { proxyPrefix + PluginsJsonUrl, PluginsJsonUrl };
+
             var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
             client.DefaultRequestHeaders.UserAgent.ParseAdd("XKBToolbox");
-            var json = await client.GetStringAsync(PluginsJsonUrl);
+            string? json = null;
+            foreach (var url in urls)
+            {
+                try
+                {
+                    json = await client.GetStringAsync(url);
+                    break;
+                }
+                catch { }
+            }
+            if (json == null) return [];
             var items = JsonSerializer.Deserialize<List<ToolInfo>>(json);
             if (items == null) return [];
             foreach (var item in items)
