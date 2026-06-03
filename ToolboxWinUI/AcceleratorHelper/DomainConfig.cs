@@ -66,6 +66,14 @@ public static class DomainConfig
             "speed.cloudflare.com",
             "one.dash.cloudflare.com",
             "api.dash.cloudflare.com"
+        },
+        ["Copilot"] = new[]
+        {
+            "githubcopilot.com",
+            "api.githubcopilot.com",
+            "copilot.github.com",
+            "copilot.microsoft.com",
+            "default.exp-tas.com"
         }
     };
 

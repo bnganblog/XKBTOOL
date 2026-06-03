@@ -23,10 +23,12 @@ public class AcceleratorPage : Grid
     private CheckBox _cbSteam = null!;
     private CheckBox _cbSpotify = null!;
     private CheckBox _cbCloudflare = null!;
+    private CheckBox _cbCopilot = null!;
     private TextBlock _latencyGitHub = null!;
     private TextBlock _latencySteam = null!;
     private TextBlock _latencySpotify = null!;
     private TextBlock _latencyCloudflare = null!;
+    private TextBlock _latencyCopilot = null!;
     private Button _startBtn = null!;
     private Button _stopBtn = null!;
     private Button _testBtn = null!;
@@ -38,7 +40,8 @@ public class AcceleratorPage : Grid
         ["GitHub"] = "github.com",
         ["Steam"] = "store.steampowered.com",
         ["Spotify"] = "open.spotify.com",
-        ["Cloudflare"] = "cloudflare.com"
+        ["Cloudflare"] = "cloudflare.com",
+        ["Copilot"] = "githubcopilot.com"
     };
 
     private readonly SolidColorBrush _accentBrush = new(Color.FromArgb(255, 0, 120, 212));
@@ -96,6 +99,7 @@ public class AcceleratorPage : Grid
         _cbSteam = CreateServiceRow(servicePanel, "Steam");
         _cbSpotify = CreateServiceRow(servicePanel, "Spotify");
         _cbCloudflare = CreateServiceRow(servicePanel, "Cloudflare");
+        _cbCopilot = CreateServiceRow(servicePanel, "Copilot");
 
         stack.Children.Add(servicePanel);
 
@@ -211,6 +215,7 @@ public class AcceleratorPage : Grid
         if (_cbSteam.IsChecked == true) services.Add("Steam");
         if (_cbSpotify.IsChecked == true) services.Add("Spotify");
         if (_cbCloudflare.IsChecked == true) services.Add("Cloudflare");
+        if (_cbCopilot.IsChecked == true) services.Add("Copilot");
 
         if (services.Count == 0)
         {
@@ -340,6 +345,7 @@ public class AcceleratorPage : Grid
             case "Steam": _latencySteam = latency; break;
             case "Spotify": _latencySpotify = latency; break;
             case "Cloudflare": _latencyCloudflare = latency; break;
+            case "Copilot": _latencyCopilot = latency; break;
         }
 
         parent.Children.Add(row);
@@ -372,6 +378,10 @@ public class AcceleratorPage : Grid
             tasks.Add(TestConnectivityAsync("Cloudflare", "cloudflare.com", _latencyCloudflare));
         else
             _latencyCloudflare.Text = "-- ms";
+        if (_cbCopilot.IsChecked == true)
+            tasks.Add(TestConnectivityAsync("Copilot", "githubcopilot.com", _latencyCopilot));
+        else
+            _latencyCopilot.Text = "-- ms";
         await Task.WhenAll(tasks);
     }
 
