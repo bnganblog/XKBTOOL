@@ -390,22 +390,22 @@ public class AcceleratorPage : Grid
         var latencyText = "-- ms";
         try
         {
-            using var ping = new Ping();
-            var reply = await ping.SendPingAsync(host, 3000);
-            if (reply.Status == IPStatus.Success)
-                latencyText = $"{reply.RoundtripTime} ms";
-            else
-                latencyText = "超时";
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+            var sw = Stopwatch.StartNew();
+            var resp = await http.GetAsync($"https://{host}", HttpCompletionOption.ResponseHeadersRead);
+            sw.Stop();
+            resp.Dispose();
+            latencyText = $"{sw.ElapsedMilliseconds} ms";
         }
-        catch { latencyText = "失败"; }
+        catch { latencyText = "超时"; }
 
         DispatcherQueue.TryEnqueue(() =>
         {
             label.Text = latencyText;
             if (latencyText.EndsWith("ms") && int.TryParse(latencyText.Replace(" ms", ""), out var t))
             {
-                if (t < 100) label.Foreground = new SolidColorBrush(Colors.Green);
-                else if (t < 300) label.Foreground = new SolidColorBrush(Colors.Orange);
+                if (t < 200) label.Foreground = new SolidColorBrush(Colors.Green);
+                else if (t < 600) label.Foreground = new SolidColorBrush(Colors.Orange);
                 else label.Foreground = new SolidColorBrush(Colors.Red);
             }
             else
