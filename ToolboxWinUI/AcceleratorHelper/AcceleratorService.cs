@@ -85,26 +85,9 @@ public class AcceleratorService
         var githubDomains = _domains.Where(d => d.Contains("github")).ToArray();
         if (githubDomains.Length > 0)
         {
-            try
-            {
-                AddLog("INFO", "正在获取 GitHub Hosts...");
-                var ghEntries = await FetchGitHubHostsAsync();
-                if (ghEntries.Count > 0)
-                {
-                    _hostsManager.AddGitHubHosts(ghEntries);
-                    AddLog("INFO", $"已添加 {ghEntries.Count} 条 GitHub Hosts");
-                }
-                else
-                {
-                    _hostsManager.AddEntries(githubDomains);
-                    AddLog("WARN", "获取 GitHub Hosts 失败，使用代理模式");
-                }
-            }
-            catch
-            {
-                _hostsManager.AddEntries(githubDomains);
-                AddLog("WARN", "获取 GitHub Hosts 异常，使用代理模式");
-            }
+            var ghHosts = GetGitHubHosts();
+            _hostsManager.AddGitHubHosts(ghHosts);
+            AddLog("INFO", $"已添加 {ghHosts.Count} 条 GitHub Hosts");
         }
 
         _host = CreateHost();
@@ -197,32 +180,20 @@ public class AcceleratorService
         _logger.LogInformation("[{Level}] {Message}", level, message);
     }
 
-    private static async Task<List<(string Ip, string Domain)>> FetchGitHubHostsAsync()
+    private static List<(string Ip, string Domain)> GetGitHubHosts()
     {
-        var entries = new List<(string Ip, string Domain)>();
-        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-        var urls = new[]
+        return new List<(string Ip, string Domain)>
         {
-            "https://raw.githubusercontent.com/maxiaof/github-hosts/master/hosts",
-            "https://ghfast.top/https://raw.githubusercontent.com/maxiaof/github-hosts/master/hosts"
+            ("140.82.113.4", "github.com"),
+            ("151.101.1.194", "github.global.ssl.fastly.net"),
+            ("151.101.65.194", "github.global.ssl.fastly.net"),
+            ("151.101.129.194", "github.global.ssl.fastly.net"),
+            ("151.101.193.194", "github.global.ssl.fastly.net"),
+            ("185.199.108.153", "assets-cdn.github.com"),
+            ("185.199.109.153", "assets-cdn.github.com"),
+            ("185.199.110.153", "assets-cdn.github.com"),
+            ("185.199.111.153", "assets-cdn.github.com"),
         };
-        string? text = null;
-        foreach (var url in urls)
-        {
-            try { text = await client.GetStringAsync(url); break; }
-            catch { }
-        }
-        if (text == null) return entries;
-
-        foreach (var line in text.Split('\n'))
-        {
-            var trimmed = line.Trim();
-            if (trimmed.StartsWith("#") || string.IsNullOrEmpty(trimmed)) continue;
-            var parts = trimmed.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length >= 2 && System.Net.IPAddress.TryParse(parts[0], out _))
-                entries.Add((parts[0], parts[1]));
-        }
-        return entries;
     }
 
     private static int GetAvailablePort(int preferredPort)
