@@ -14,6 +14,7 @@
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
         <ApplicationDisplayVersion>1.2.0</ApplicationDisplayVersion>
+        <Version>1.2.0</Version>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>ToolboxWinUI</RootNamespace>
 
