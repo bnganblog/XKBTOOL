@@ -30,6 +30,7 @@
         <Content Include="app.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
         <Content Include="icon\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
         <Content Include="tools\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+        <Content Include="..\tools.json" Link="tools.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     </ItemGroup>
 
     <ItemGroup>

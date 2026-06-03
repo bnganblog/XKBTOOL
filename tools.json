@@ -159,33 +159,5 @@
     "Description": "Windows 控制面板",
     "Action": "control.exe",
     "Category": "其他工具"
-  },
-  {
-    "Icon": "icon\\store.png",
-    "Name": "驱动管理",
-    "Description": "驱动安装与更新",
-    "Action": "msg:即将推出",
-    "Category": "工具商店"
-  },
-  {
-    "Icon": "icon\\store.png",
-    "Name": "系统备份",
-    "Description": "系统备份与还原",
-    "Action": "msg:即将推出",
-    "Category": "工具商店"
-  },
-  {
-    "Icon": "icon\\store.png",
-    "Name": "数据恢复",
-    "Description": "文件数据恢复工具",
-    "Action": "msg:即将推出",
-    "Category": "工具商店"
-  },
-  {
-    "Icon": "icon\\store.png",
-    "Name": "远程桌面",
-    "Description": "远程连接工具",
-    "Action": "msg:即将推出",
-    "Category": "工具商店"
   }
 ]

@@ -1,0 +1,12 @@
+[
+  {
+    "Name": "ProxyTools",
+    "Description": "基于 Mihomo 内核的代理工具",
+    "Icon": "icon\\store.png"
+  },
+  {
+    "Name": "AcceleratorHelper",
+    "Description": "GitHub/Steam/Spotify 等访问加速",
+    "Icon": "icon\\accelerator.png"
+  }
+]

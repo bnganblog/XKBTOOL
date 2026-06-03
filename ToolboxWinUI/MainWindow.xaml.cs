@@ -145,9 +145,11 @@ public sealed partial class MainWindow : Window
     private static readonly string ToolsFile = Path.Combine(DataDir, "tools.json");
 
     private NavigationViewItem _navProxyItem;
+    private NavigationViewItem _navAcceleratorItem;
     private FileSystemWatcher _proxyWatcher;
     private static readonly string ProxyExePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ProxyTools", "mihomo", "mihomo.exe");
     private static readonly string ProxyDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ProxyTools");
+    private static readonly string AcceleratorExePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AcceleratorHelper", "AcceleratorHelper.exe");
 
     public MainWindow()
     {
@@ -181,6 +183,7 @@ public sealed partial class MainWindow : Window
             if (_loaded) return;
             _loaded = true;
             UpdateProxyNavItem();
+            UpdateAcceleratorNavItem();
             SetupProxyWatcher();
             await Task.Run(() =>
             {
@@ -592,7 +595,6 @@ public sealed partial class MainWindow : Window
             new ToolInfo { Icon=$"{sys32}\\mspaint.exe",   Name="画图工具",    Description="Windows 画图工具",     Action="mspaint.exe",               Category="其他工具" },
             new ToolInfo { Icon=$"{sys32}\\cmd.exe",       Name="命令提示符",  Description="CMD 命令行工具",       Action="cmd.exe",                   Category="其他工具" },
             new ToolInfo { Icon=$"{sys32}\\control.exe",   Name="控制面板",    Description="Windows 控制面板",     Action="control.exe",               Category="其他工具" },
-            new ToolInfo { Icon="\uEE47",                  Name="ProxyTools",  Description="一个简易的代理工具插件，基于 Mihomo 内核", Action="dl:proxytools",           Category="工具商店" },
         ]);
 
         _allTools = tools;
@@ -687,9 +689,25 @@ public sealed partial class MainWindow : Window
                     LoadContent("system");
                 }
                 break;
+            case "accelerator":
+                if (File.Exists(AcceleratorExePath))
+                {
+                    navView.Header = "网络加速";
+                    ShowAcceleratorPage();
+                }
+                else
+                {
+                    UpdateAcceleratorNavItem();
+                    navView.SelectedItem = navStore;
+                    LoadContent("工具商店");
+                }
+                break;
             default:
                 navView.Header = tag;
-                ShowCategory(tag);
+                if (tag == "工具商店")
+                    ShowStoreAsync();
+                else
+                    ShowCategory(tag);
                 break;
         }
     }
@@ -726,6 +744,38 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private void UpdateAcceleratorNavItem()
+    {
+        var menuItems = navView.MenuItems;
+        bool exists = File.Exists(AcceleratorExePath);
+        bool hasItem = _navAcceleratorItem != null && menuItems.Contains(_navAcceleratorItem);
+
+        if (exists && !hasItem)
+        {
+            _navAcceleratorItem = new NavigationViewItem
+            {
+                Content = "网络加速",
+                Tag = "accelerator",
+                Icon = new FontIcon { Glyph = "\xE774", FontFamily = (Microsoft.UI.Xaml.Media.FontFamily)Application.Current.Resources["SymbolThemeFontFamily"] }
+            };
+            int insertIndex = 0;
+            for (int i = 0; i < menuItems.Count; i++)
+            {
+                if (menuItems[i] is NavigationViewItem item && item.Tag?.ToString() == "network")
+                {
+                    insertIndex = i + 1;
+                    break;
+                }
+            }
+            menuItems.Insert(insertIndex, _navAcceleratorItem);
+        }
+        else if (!exists && hasItem)
+        {
+            menuItems.Remove(_navAcceleratorItem);
+            _navAcceleratorItem = null;
+        }
+    }
+
     private void SetupProxyWatcher()
     {
         try
@@ -741,16 +791,22 @@ public sealed partial class MainWindow : Window
             {
                 if (e.FullPath.IndexOf("ProxyTools\\mihomo\\mihomo.exe", StringComparison.OrdinalIgnoreCase) >= 0)
                     DispatcherQueue.TryEnqueue(() => UpdateProxyNavItem());
+                if (e.FullPath.IndexOf("AcceleratorHelper\\AcceleratorHelper.exe", StringComparison.OrdinalIgnoreCase) >= 0)
+                    DispatcherQueue.TryEnqueue(() => UpdateAcceleratorNavItem());
             };
             _proxyWatcher.Deleted += (s, e) =>
             {
                 if (e.FullPath.IndexOf("ProxyTools\\mihomo\\mihomo.exe", StringComparison.OrdinalIgnoreCase) >= 0)
                     DispatcherQueue.TryEnqueue(() => UpdateProxyNavItem());
+                if (e.FullPath.IndexOf("AcceleratorHelper\\AcceleratorHelper.exe", StringComparison.OrdinalIgnoreCase) >= 0)
+                    DispatcherQueue.TryEnqueue(() => UpdateAcceleratorNavItem());
             };
             _proxyWatcher.Renamed += (s, e) =>
             {
                 if (e.FullPath.IndexOf("ProxyTools\\mihomo\\mihomo.exe", StringComparison.OrdinalIgnoreCase) >= 0)
                     DispatcherQueue.TryEnqueue(() => UpdateProxyNavItem());
+                if (e.FullPath.IndexOf("AcceleratorHelper\\AcceleratorHelper.exe", StringComparison.OrdinalIgnoreCase) >= 0)
+                    DispatcherQueue.TryEnqueue(() => UpdateAcceleratorNavItem());
             };
         }
         catch { }
@@ -796,9 +852,58 @@ public sealed partial class MainWindow : Window
         contentArea.Children.Add(CreateToolGrid(tools));
     }
 
+    private async void ShowStoreAsync()
+    {
+        var plugins = await FetchRemotePluginsAsync();
+        if (plugins.Count > 0)
+        {
+            contentArea.Children.Add(CreateToolGrid(plugins));
+        }
+        else
+        {
+            contentArea.Children.Add(new TextBlock
+            {
+                Text = "加载商店失败，请检查网络后重试",
+                FontSize = 16,
+                Foreground = _textSecondaryBrush,
+                Margin = new Thickness(0, 40, 0, 0),
+                HorizontalAlignment = HorizontalAlignment.Center
+            });
+        }
+    }
+
+    private static readonly string PluginsJsonUrl = "https://raw.githubusercontent.com/bnganblog/XKBTOOL/master/plugin/plugins.json";
+
+    private async Task<List<ToolInfo>> FetchRemotePluginsAsync()
+    {
+        try
+        {
+            var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("XKBToolbox");
+            var json = await client.GetStringAsync(PluginsJsonUrl);
+            var items = JsonSerializer.Deserialize<List<ToolInfo>>(json);
+            if (items == null) return [];
+            foreach (var item in items)
+            {
+                item.Category = "工具商店";
+                item.Action = $"dl:{item.Name}";
+            }
+            return items;
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
     private void ShowProxyTools()
     {
         contentArea.Children.Add(new ProxyTools.ProxyPage());
+    }
+
+    private void ShowAcceleratorPage()
+    {
+        contentArea.Children.Add(new Accelerator.AcceleratorPage(this));
     }
 
     private void ShowNetworkTools()
@@ -2008,7 +2113,9 @@ public sealed partial class MainWindow : Window
         Grid.SetColumn(settingsBtn, 0);
 
         var isStoreDl = tool.Category == "工具商店" && tool.Action.StartsWith("dl:");
-        var isInstalled = isStoreDl && IsProxyToolsInstalled();
+        var pluginName = isStoreDl ? tool.Action.Substring(3) : null;
+        var isInstalled = isStoreDl && PluginConfigs.TryGetValue(pluginName!, out var cfg)
+            && File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, cfg.checkFile));
         var openBtn = new Button
         {
             Content = isStoreDl ? (isInstalled ? "打开" : "安装") : "打开",
@@ -2024,14 +2131,29 @@ public sealed partial class MainWindow : Window
         {
             if (isInstalled)
             {
-                if (_navProxyItem != null)
+                if (pluginName == "AcceleratorHelper")
                 {
-                    navView.SelectedItem = _navProxyItem;
-                    LoadContent("proxy");
+                    if (_navAcceleratorItem != null)
+                    {
+                        navView.SelectedItem = _navAcceleratorItem;
+                        LoadContent("accelerator");
+                    }
+                    else
+                    {
+                        ShowAcceleratorPage();
+                    }
                 }
                 else
                 {
-                    ShowProxyTools();
+                    if (_navProxyItem != null)
+                    {
+                        navView.SelectedItem = _navProxyItem;
+                        LoadContent("proxy");
+                    }
+                    else
+                    {
+                        ShowProxyTools();
+                    }
                 }
             }
             else
@@ -2151,17 +2273,29 @@ public sealed partial class MainWindow : Window
 
     private bool _isDownloading;
 
+    private static readonly Dictionary<string, (string checkFile, string extractFolder, string displayName, string installMsg)> PluginConfigs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["ProxyTools"] = (Path.Combine("ProxyTools", "mihomo", "mihomo.exe"), "", "ProxyTools", "ProxyTools 安装成功！左侧导航栏将出现「代理工具」。"),
+        ["AcceleratorHelper"] = (Path.Combine("AcceleratorHelper", "AcceleratorHelper.exe"), "AcceleratorHelper", "网络加速器", "网络加速器安装成功！可在「网络加速」页面启动使用。"),
+    };
+
     private async Task DownloadAndExtractPlugin(string pluginName)
     {
         if (_isDownloading) return;
+        if (!PluginConfigs.TryGetValue(pluginName, out var config))
+        {
+            ShowMessageDialog($"未知插件: {pluginName}");
+            return;
+        }
+        var (checkFile, extractFolder, displayName, installMsg) = config;
+
         _isDownloading = true;
         try
         {
             var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            var targetDir = Path.Combine(baseDir, "ProxyTools", "mihomo");
-            if (File.Exists(Path.Combine(targetDir, "mihomo.exe")))
+            if (File.Exists(Path.Combine(baseDir, checkFile)))
             {
-                ShowMessageDialog("ProxyTools 已安装！如需重新安装，请先删除 ProxyTools 文件夹。");
+                ShowMessageDialog($"{displayName} 已安装！如需重新安装，请先删除相关文件夹。");
                 return;
             }
 
@@ -2169,7 +2303,7 @@ public sealed partial class MainWindow : Window
             downloadProgressBar.IsIndeterminate = true;
             downloadFooter.Visibility = Visibility.Visible;
 
-            var rawUrl = "https://github.com/bnganblog/XKBTOOL/raw/master/plugin/ProxyTools.zip";
+            var rawUrl = $"https://github.com/bnganblog/XKBTOOL/raw/master/plugin/{pluginName}.zip";
             var proxyPrefix = App.DownloadProxy;
             var urls = string.IsNullOrEmpty(proxyPrefix)
                 ? new[] { rawUrl }
@@ -2182,7 +2316,7 @@ public sealed partial class MainWindow : Window
             {
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("XKBToolbox");
                 client.Timeout = TimeSpan.FromMinutes(5);
-                HttpResponseMessage response = null;
+                HttpResponseMessage? response = null;
                 foreach (var url in urls)
                 {
                     try
@@ -2228,17 +2362,33 @@ public sealed partial class MainWindow : Window
 
             downloadStatusText.Text = "正在解压...";
             downloadProgressBar.IsIndeterminate = true;
-            System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, baseDir, overwriteFiles: true);
+            var extractDir = string.IsNullOrEmpty(extractFolder) ? baseDir : Path.Combine(baseDir, extractFolder);
+            if (!string.IsNullOrEmpty(extractFolder))
+                Directory.CreateDirectory(extractDir);
+            System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, extractDir, overwriteFiles: true);
 
             try { File.Delete(zipPath); } catch { }
 
             downloadFooter.Visibility = Visibility.Collapsed;
-            ShowMessageDialog("ProxyTools 安装成功！请重启应用或等待几秒，左侧导航栏将出现「代理工具」。");
-            UpdateProxyNavItem();
-            if (_navProxyItem != null)
+            ShowMessageDialog(installMsg);
+
+            if (pluginName == "ProxyTools")
             {
-                navView.SelectedItem = _navProxyItem;
-                LoadContent("proxy");
+                UpdateProxyNavItem();
+                if (_navProxyItem != null)
+                {
+                    navView.SelectedItem = _navProxyItem;
+                    LoadContent("proxy");
+                }
+            }
+            else if (pluginName == "AcceleratorHelper")
+            {
+                UpdateAcceleratorNavItem();
+                if (_navAcceleratorItem != null)
+                {
+                    navView.SelectedItem = _navAcceleratorItem;
+                    LoadContent("accelerator");
+                }
             }
         }
         catch (HttpRequestException)
