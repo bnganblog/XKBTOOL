@@ -406,12 +406,22 @@ public class AcceleratorPage : Grid
         var latencyText = "-- ms";
         try
         {
+            var bestMs = long.MaxValue;
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
-            var sw = Stopwatch.StartNew();
-            var resp = await http.GetAsync($"https://{host}", HttpCompletionOption.ResponseHeadersRead);
-            sw.Stop();
-            resp.Dispose();
-            latencyText = $"{sw.ElapsedMilliseconds} ms";
+            for (int i = 0; i < 5; i++)
+            {
+                try
+                {
+                    var sw = Stopwatch.StartNew();
+                    var resp = await http.GetAsync($"https://{host}", HttpCompletionOption.ResponseHeadersRead);
+                    sw.Stop();
+                    resp.Dispose();
+                    if (sw.ElapsedMilliseconds < bestMs)
+                        bestMs = sw.ElapsedMilliseconds;
+                }
+                catch { }
+            }
+            latencyText = bestMs < long.MaxValue ? $"{bestMs} ms" : "超时";
         }
         catch { latencyText = "超时"; }
 
