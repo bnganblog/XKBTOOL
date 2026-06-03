@@ -825,6 +825,8 @@ public sealed partial class MainWindow : Window
     private void ShowFavorites()
     {
         var favs = _allTools.Where(t => IsFavorite(t)).ToList();
+        if (_cachedStorePlugins != null)
+            favs.AddRange(_cachedStorePlugins.Where(t => IsFavorite(t)));
         if (favs.Count == 0)
         {
             contentArea.Children.Add(new TextBlock
