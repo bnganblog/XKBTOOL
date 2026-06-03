@@ -1064,7 +1064,7 @@ public sealed partial class MainWindow : Window
         var sources = new (string name, string tag, string url)[] {
             ("iP138.com", "国内", "https://api.yaohud.cn/api/v5/ip138"),
             ("IP.cn", "国内", "https://ip9.com.cn/get"),
-            ("Cloudflare", "国际", "https://api.ipify.org?format=json"),
+            ("Cloudflare", "国际", "https://www.cloudflare.com/cdn-cgi/trace"),
             ("IPinfo.io", "国际", "https://ipinfo.io/json")
         };
         var sourceLabels = new TextBlock[sources.Length];
@@ -2036,7 +2036,7 @@ public sealed partial class MainWindow : Window
             {
                 var baseDir = AppDomain.CurrentDomain.BaseDirectory;
                 var candidate1 = Path.Combine(baseDir, iconPath);
-                var candidate2 = Path.Combine(baseDir, "..", "..", "..", "plugin", "icon", Path.GetFileName(iconPath));
+                var candidate2 = Path.Combine(baseDir, "..", "..", "..", "..", "plugin", "icon", Path.GetFileName(iconPath));
                 iconPath = File.Exists(candidate1) ? candidate1 : (File.Exists(candidate2) ? candidate2 : candidate1);
             }
             var img = new Image { Width = 36, Height = 36, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Top };
