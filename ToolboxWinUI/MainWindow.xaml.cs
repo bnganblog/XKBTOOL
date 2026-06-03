@@ -147,6 +147,7 @@ public sealed partial class MainWindow : Window
     private NavigationViewItem _navProxyItem;
     private NavigationViewItem _navAcceleratorItem;
     private FileSystemWatcher _proxyWatcher;
+    private List<ToolInfo>? _cachedStorePlugins;
     private static readonly string ProxyExePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ProxyTools", "mihomo", "mihomo.exe");
     private static readonly string ProxyDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ProxyTools");
     private static readonly string AcceleratorExePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AcceleratorHelper", "AcceleratorHelper.exe");
@@ -185,6 +186,11 @@ public sealed partial class MainWindow : Window
             UpdateProxyNavItem();
             UpdateAcceleratorNavItem();
             SetupProxyWatcher();
+            _ = FetchRemotePluginsAsync().ContinueWith(t =>
+            {
+                if (t.Result.Count > 0)
+                    _cachedStorePlugins = t.Result;
+            }, TaskScheduler.Default);
             await Task.Run(() =>
             {
                 _cpuInfo = GetCPUInfo();
@@ -854,10 +860,12 @@ public sealed partial class MainWindow : Window
 
     private async void ShowStoreAsync()
     {
-        var plugins = await FetchRemotePluginsAsync();
-        if (plugins.Count > 0)
+        if (_cachedStorePlugins == null)
+            _cachedStorePlugins = await FetchRemotePluginsAsync();
+
+        if (_cachedStorePlugins.Count > 0)
         {
-            contentArea.Children.Add(CreateToolGrid(plugins));
+            contentArea.Children.Add(CreateToolGrid(_cachedStorePlugins));
         }
         else
         {
