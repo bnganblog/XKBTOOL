@@ -143,6 +143,8 @@ public sealed partial class MainWindow : Window
     private static readonly string DataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ToolboxWinUI");
     private static readonly string FavoritesFile = Path.Combine(DataDir, "favorites.json");
     private static readonly string ToolsFile = Path.Combine(DataDir, "tools.json");
+    private static readonly string ConfigVersionFile = Path.Combine(DataDir, "config.version");
+    private static readonly string CurrentConfigVersion = "1.1.0";
 
     private NavigationViewItem _navProxyItem;
     private NavigationViewItem _navAcceleratorItem;
@@ -342,6 +344,19 @@ public sealed partial class MainWindow : Window
     {
         try
         {
+            if (!Directory.Exists(DataDir))
+                Directory.CreateDirectory(DataDir);
+
+            var storedVersion = "";
+            try { storedVersion = File.ReadAllText(ConfigVersionFile).Trim(); } catch { }
+
+            if (storedVersion != CurrentConfigVersion)
+            {
+                try { File.Delete(ToolsFile); } catch { }
+                try { File.Delete(FavoritesFile); } catch { }
+                try { File.WriteAllText(ConfigVersionFile, CurrentConfigVersion); } catch { }
+            }
+
             if (File.Exists(ToolsFile))
             {
                 _allTools = JsonSerializer.Deserialize<List<ToolInfo>>(File.ReadAllText(ToolsFile)) ?? [];
