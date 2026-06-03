@@ -2185,7 +2185,7 @@ public sealed partial class MainWindow : Window
             else
                 ExecuteToolAction(tool.Action);
         };
-        Grid.SetColumn(openBtn, 1);
+        Grid.SetColumn(openBtn, 2);
 
         if (isStoreDl && isInstalled)
         {
@@ -2194,11 +2194,11 @@ public sealed partial class MainWindow : Window
                 Content = "卸载",
                 FontSize = 13,
                 HorizontalAlignment = HorizontalAlignment.Right,
-                Padding = new Thickness(16, 6, 16, 6),
+                Padding = new Thickness(20, 6, 20, 6),
                 Background = new SolidColorBrush(WColor.FromArgb(255, 232, 17, 35)),
                 Foreground = new SolidColorBrush(WColor.FromArgb(255, 255, 255, 255)),
                 BorderThickness = new Thickness(0),
-                Margin = new Thickness(8, 0, 0, 0),
+                Margin = new Thickness(0, 0, 6, 0),
                 Tag = tool
             };
             uninstallBtn.Click += async (s, e) =>
@@ -2220,7 +2220,7 @@ public sealed partial class MainWindow : Window
                 }
                 LoadContent(GetCurrentTag());
             };
-            Grid.SetColumn(uninstallBtn, 2);
+            Grid.SetColumn(uninstallBtn, 1);
             bottomRow.Children.Add(uninstallBtn);
         }
 
