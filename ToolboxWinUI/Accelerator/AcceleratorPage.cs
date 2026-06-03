@@ -15,9 +15,9 @@ public class AcceleratorPage : Grid
 {
     private readonly MainWindow _mainWindow;
     private readonly HttpClient _httpClient;
-    private Process? _helperProcess;
+    private static Process? _helperProcess;
     private DispatcherTimer? _statusTimer;
-    private bool _isRunning;
+    private static bool _isRunning;
 
     private CheckBox _cbGitHub = null!;
     private CheckBox _cbSteam = null!;
@@ -62,13 +62,29 @@ public class AcceleratorPage : Grid
         Margin = new Thickness(24);
         ApplyTheme();
         BuildUI();
+        if (_isRunning)
+        {
+            _startBtn.IsEnabled = false;
+            _stopBtn.IsEnabled = true;
+            _statusText.Text = "运行中 ●";
+            _statusText.Foreground = new SolidColorBrush(Colors.Green);
+        }
         App.ThemeChanged += () => DispatcherQueue.TryEnqueue(() =>
         {
             ApplyTheme();
             Children.Clear();
             BuildUI();
+            if (_isRunning)
+            {
+                _startBtn.IsEnabled = false;
+                _stopBtn.IsEnabled = true;
+            }
             _statusTimer?.Start();
         });
+        Unloaded += (_, _) =>
+        {
+            _statusTimer?.Stop();
+        };
     }
 
     private void BuildUI()
