@@ -3090,7 +3090,27 @@ public sealed partial class MainWindow : Window
         }
         if (msg == WM_CLOSE && _trayIconAdded)
         {
-            MinimizeToTray();
+            _ = DispatcherQueue.TryEnqueue(async () =>
+            {
+                var dlg = new ContentDialog
+                {
+                    Title = "退出确认",
+                    Content = "是否最小化到系统托盘？",
+                    PrimaryButtonText = "最小化到托盘",
+                    SecondaryButtonText = "退出程序",
+                    CloseButtonText = "取消",
+                    XamlRoot = contentArea.XamlRoot
+                };
+                var result = await dlg.ShowAsync();
+                if (result == ContentDialogResult.Primary)
+                    MinimizeToTray();
+                else if (result == ContentDialogResult.Secondary)
+                {
+                    _trayIconAdded = false;
+                    DestroyTrayIcon();
+                    Application.Current.Exit();
+                }
+            });
             return IntPtr.Zero;
         }
         if (msg == 0x0111) // WM_COMMAND
