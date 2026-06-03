@@ -10,6 +10,8 @@ public partial class App : Application
         "ToolboxWinUI", "settings.json");
 
     public static string CurrentTheme { get; private set; } = "LightGlass";
+    public static string SysInfoStyle { get; private set; } = "Circular";
+    public static string DownloadProxy { get; private set; } = "https://ghfast.top/";
     public static event Action? ThemeChanged;
 
     public App()
@@ -36,6 +38,18 @@ public partial class App : Application
         ThemeChanged?.Invoke();
     }
 
+    public static void SetSysInfoStyle(string style)
+    {
+        SysInfoStyle = style == "Bar" ? "Bar" : "Circular";
+        SaveSetting("sysInfoStyle", SysInfoStyle);
+    }
+
+    public static void SetDownloadProxy(string proxy)
+    {
+        DownloadProxy = string.IsNullOrWhiteSpace(proxy) ? "" : proxy.TrimEnd('/') + "/";
+        SaveSetting("downloadProxy", DownloadProxy);
+    }
+
     public static void LoadSavedTheme()
     {
         var theme = LoadSetting("theme");
@@ -45,6 +59,13 @@ public partial class App : Application
             SetTheme("LightGlass");
         else
             SetTheme("Light");
+
+        var style = LoadSetting("sysInfoStyle");
+        SysInfoStyle = style == "Bar" ? "Bar" : "Circular";
+
+        var proxy = LoadSetting("downloadProxy");
+        if (!string.IsNullOrEmpty(proxy))
+            DownloadProxy = proxy.TrimEnd('/') + "/";
     }
 
     private static void SaveSetting(string key, string value)

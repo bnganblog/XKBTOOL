@@ -1,191 +1,191 @@
 [
   {
-    "Icon": "tools\\\u5904\u7406\u5668\u5DE5\u5177\\CPUZ\\cpuz_x64.exe",
+    "Icon": "tools\\处理器工具\\CPUZ\\cpuz_x64.exe",
     "Name": "CPU-Z",
-    "Description": "CPU \u68C0\u6D4B\u5DE5\u5177",
-    "Action": "tools\\\u5904\u7406\u5668\u5DE5\u5177\\CPUZ\\cpuz_x64.exe",
-    "Category": "CPU\u5DE5\u5177"
+    "Description": "CPU 型号/频率/缓存详细检测",
+    "Action": "tools\\处理器工具\\CPUZ\\cpuz_x64.exe",
+    "Category": "CPU工具"
   },
   {
     "Icon": "icon\\gpuz.png",
     "Name": "GPU-Z",
-    "Description": "\u663E\u5361\u68C0\u6D4B\u5DE5\u5177",
-    "Action": "msg:\u8BF7\u5148\u5B89\u88C5 GPU-Z",
-    "Category": "\u663E\u5361\u5DE5\u5177"
+    "Description": "显卡型号/频率/传感器详细检测",
+    "Action": "msg:请先安装 GPU-Z",
+    "Category": "显卡工具"
   },
   {
     "Icon": "C:\\WINDOWS\\System32\\diskmgmt.msc",
-    "Name": "\u78C1\u76D8\u7BA1\u7406",
-    "Description": "Windows \u78C1\u76D8\u7BA1\u7406",
+    "Name": "磁盘管理",
+    "Description": "Windows 磁盘管理",
     "Action": "diskmgmt.msc",
-    "Category": "\u786C\u76D8\u5DE5\u5177"
+    "Category": "硬盘工具"
   },
   {
     "Icon": "C:\\WINDOWS\\System32\\devmgmt.msc",
-    "Name": "\u8BBE\u5907\u7BA1\u7406\u5668",
-    "Description": "\u7BA1\u7406\u786C\u4EF6\u8BBE\u5907\u9A71\u52A8",
+    "Name": "设备管理器",
+    "Description": "管理硬件设备驱动",
     "Action": "devmgmt.msc",
-    "Category": "\u5916\u8BBE\u5DE5\u5177"
+    "Category": "外设工具"
   },
   {
     "Icon": "C:\\WINDOWS\\System32\\Taskmgr.exe",
-    "Name": "\u4EFB\u52A1\u7BA1\u7406\u5668",
-    "Description": "\u67E5\u770B\u7CFB\u7EDF\u8FDB\u7A0B\u4E0E\u6027\u80FD",
+    "Name": "任务管理器",
+    "Description": "查看系统进程与性能",
     "Action": "taskmgr.exe",
-    "Category": "CPU\u5DE5\u5177"
+    "Category": "CPU工具"
   },
   {
     "Icon": "C:\\WINDOWS\\System32\\dxdiag.exe",
-    "Name": "DirectX\u8BCA\u65AD",
-    "Description": "DirectX \u8BCA\u65AD\u5DE5\u5177",
+    "Name": "DirectX诊断",
+    "Description": "DirectX 诊断工具",
     "Action": "dxdiag.exe",
-    "Category": "\u663E\u5361\u5DE5\u5177"
+    "Category": "显卡工具"
   },
   {
     "Icon": "C:\\WINDOWS\\System32\\msinfo32.exe",
-    "Name": "\u7CFB\u7EDF\u4FE1\u606F",
-    "Description": "\u67E5\u770B\u8BE6\u7EC6\u7CFB\u7EDF\u4FE1\u606F",
+    "Name": "系统信息",
+    "Description": "查看详细系统信息",
     "Action": "msinfo32.exe",
-    "Category": "CPU\u5DE5\u5177"
+    "Category": "CPU工具"
   },
   {
     "Icon": "C:\\WINDOWS\\System32\\regedit.exe",
-    "Name": "\u6CE8\u518C\u8868\u7F16\u8F91\u5668",
-    "Description": "Windows \u6CE8\u518C\u8868\u7F16\u8F91",
+    "Name": "注册表编辑器",
+    "Description": "Windows 注册表编辑",
     "Action": "regedit.exe",
-    "Category": "\u5176\u4ED6\u5DE5\u5177"
+    "Category": "其他工具"
   },
   {
     "Icon": "icon\\aida64.png",
     "Name": "AIDA64",
-    "Description": "\u7EFC\u5408\u786C\u4EF6\u70E4\u673A\u5DE5\u5177",
-    "Action": "msg:\u8BF7\u5148\u5B89\u88C5 AIDA64",
-    "Category": "\u70E4\u9E21\u5DE5\u5177"
+    "Description": "全面硬件信息检测与稳定性测试",
+    "Action": "msg:请先安装 AIDA64",
+    "Category": "烤鸡工具"
   },
   {
     "Icon": "icon\\prime95.png",
     "Name": "Prime95",
-    "Description": "CPU \u538B\u529B\u6D4B\u8BD5",
-    "Action": "msg:\u8BF7\u5148\u5B89\u88C5 Prime95",
-    "Category": "\u70E4\u9E21\u5DE5\u5177"
+    "Description": "CPU 极限压力与稳定性测试",
+    "Action": "msg:请先安装 Prime95",
+    "Category": "烤鸡工具"
   },
   {
     "Icon": "icon\\furmark.png",
     "Name": "FurMark",
-    "Description": "GPU \u538B\u529B\u6D4B\u8BD5",
-    "Action": "msg:\u8BF7\u5148\u5B89\u88C5 FurMark",
-    "Category": "\u70E4\u9E21\u5DE5\u5177"
+    "Description": "GPU 极限压力与稳定性测试（甜甜圈）",
+    "Action": "msg:请先安装 FurMark",
+    "Category": "烤鸡工具"
   },
   {
     "Icon": "icon\\3dmark.png",
     "Name": "3DMark",
-    "Description": "\u663E\u5361\u6027\u80FD\u57FA\u51C6\u6D4B\u8BD5",
-    "Action": "msg:\u8BF7\u5148\u5B89\u88C5 3DMark",
-    "Category": "\u70E4\u9E21\u5DE5\u5177"
+    "Description": "显卡性能基准测试",
+    "Action": "msg:请先安装 3DMark",
+    "Category": "烤鸡工具"
   },
   {
     "Icon": "icon\\memtest.png",
     "Name": "MemTest86",
-    "Description": "\u5185\u5B58\u7A33\u5B9A\u6027\u6D4B\u8BD5",
-    "Action": "msg:\u8BF7\u5148\u5B89\u88C5 MemTest86",
-    "Category": "\u70E4\u9E21\u5DE5\u5177"
+    "Description": "内存稳定性与错误检测",
+    "Action": "msg:请先安装 MemTest86",
+    "Category": "烤鸡工具"
   },
   {
     "Icon": "C:\\WINDOWS\\System32\\cmd.exe",
-    "Name": "Ping\u6D4B\u8BD5",
-    "Description": "\u6D4B\u8BD5\u7F51\u7EDC\u8FDE\u901A\u6027",
+    "Name": "Ping测试",
+    "Description": "测试网络连通性",
     "Action": "cmd:ping www.baidu.com",
-    "Category": "\u7F51\u7EDC\u5DE5\u5177"
+    "Category": "网络工具"
   },
   {
     "Icon": "C:\\WINDOWS\\System32\\cmd.exe",
-    "Name": "IP\u914D\u7F6E",
-    "Description": "\u67E5\u770B\u7F51\u7EDC\u914D\u7F6E\u4FE1\u606F",
+    "Name": "IP配置",
+    "Description": "查看网络配置信息",
     "Action": "cmd:ipconfig /all",
-    "Category": "\u7F51\u7EDC\u5DE5\u5177"
+    "Category": "网络工具"
   },
   {
     "Icon": "C:\\WINDOWS\\System32\\cmd.exe",
-    "Name": "\u7F51\u7EDC\u8FDE\u63A5",
-    "Description": "\u67E5\u770B\u5F53\u524D\u7F51\u7EDC\u8FDE\u63A5",
+    "Name": "网络连接",
+    "Description": "查看当前网络连接",
     "Action": "cmd:netstat -an",
-    "Category": "\u7F51\u7EDC\u5DE5\u5177"
+    "Category": "网络工具"
   },
   {
     "Icon": "icon\\clean.png",
-    "Name": "\u6E05\u7406\u5783\u573E\u6587\u4EF6",
-    "Description": "\u6E05\u7406\u7CFB\u7EDF\u4E34\u65F6\u6587\u4EF6",
-    "Action": "msg:\u6E05\u7406\u529F\u80FD\u5F00\u53D1\u4E2D...",
-    "Category": "\u5176\u4ED6\u5DE5\u5177"
+    "Name": "清理垃圾文件",
+    "Description": "清理系统临时文件",
+    "Action": "msg:清理功能开发中...",
+    "Category": "其他工具"
   },
   {
     "Icon": "icon\\startup.png",
-    "Name": "\u542F\u52A8\u9879\u7BA1\u7406",
-    "Description": "\u7BA1\u7406\u5F00\u673A\u542F\u52A8\u9879",
-    "Action": "msg:\u542F\u52A8\u9879\u7BA1\u7406\u5F00\u53D1\u4E2D...",
-    "Category": "\u5176\u4ED6\u5DE5\u5177"
+    "Name": "启动项管理",
+    "Description": "管理开机启动项",
+    "Action": "msg:启动项管理开发中...",
+    "Category": "其他工具"
   },
   {
     "Icon": "C:\\WINDOWS\\System32\\notepad.exe",
-    "Name": "\u8BB0\u4E8B\u672C",
-    "Description": "Windows \u6587\u672C\u7F16\u8F91\u5668",
+    "Name": "记事本",
+    "Description": "Windows 文本编辑器",
     "Action": "notepad.exe",
-    "Category": "\u5176\u4ED6\u5DE5\u5177"
+    "Category": "其他工具"
   },
   {
     "Icon": "C:\\WINDOWS\\System32\\calc.exe",
-    "Name": "\u8BA1\u7B97\u5668",
-    "Description": "Windows \u8BA1\u7B97\u5668",
+    "Name": "计算器",
+    "Description": "Windows 计算器",
     "Action": "calc.exe",
-    "Category": "\u5176\u4ED6\u5DE5\u5177"
+    "Category": "其他工具"
   },
   {
     "Icon": "C:\\WINDOWS\\System32\\mspaint.exe",
-    "Name": "\u753B\u56FE\u5DE5\u5177",
-    "Description": "Windows \u753B\u56FE\u5DE5\u5177",
+    "Name": "画图工具",
+    "Description": "Windows 画图工具",
     "Action": "mspaint.exe",
-    "Category": "\u5176\u4ED6\u5DE5\u5177"
+    "Category": "其他工具"
   },
   {
     "Icon": "C:\\WINDOWS\\System32\\cmd.exe",
-    "Name": "\u547D\u4EE4\u63D0\u793A\u7B26",
-    "Description": "CMD \u547D\u4EE4\u884C\u5DE5\u5177",
+    "Name": "命令提示符",
+    "Description": "CMD 命令行工具",
     "Action": "cmd.exe",
-    "Category": "\u5176\u4ED6\u5DE5\u5177"
+    "Category": "其他工具"
   },
   {
     "Icon": "C:\\WINDOWS\\System32\\control.exe",
-    "Name": "\u63A7\u5236\u9762\u677F",
-    "Description": "Windows \u63A7\u5236\u9762\u677F",
+    "Name": "控制面板",
+    "Description": "Windows 控制面板",
     "Action": "control.exe",
-    "Category": "\u5176\u4ED6\u5DE5\u5177"
+    "Category": "其他工具"
   },
   {
     "Icon": "icon\\store.png",
-    "Name": "\u9A71\u52A8\u7BA1\u7406",
-    "Description": "\u9A71\u52A8\u5B89\u88C5\u4E0E\u66F4\u65B0",
-    "Action": "msg:\u5373\u5C06\u63A8\u51FA",
-    "Category": "\u5DE5\u5177\u5546\u5E97"
+    "Name": "驱动管理",
+    "Description": "驱动安装与更新",
+    "Action": "msg:即将推出",
+    "Category": "工具商店"
   },
   {
     "Icon": "icon\\store.png",
-    "Name": "\u7CFB\u7EDF\u5907\u4EFD",
-    "Description": "\u7CFB\u7EDF\u5907\u4EFD\u4E0E\u8FD8\u539F",
-    "Action": "msg:\u5373\u5C06\u63A8\u51FA",
-    "Category": "\u5DE5\u5177\u5546\u5E97"
+    "Name": "系统备份",
+    "Description": "系统备份与还原",
+    "Action": "msg:即将推出",
+    "Category": "工具商店"
   },
   {
     "Icon": "icon\\store.png",
-    "Name": "\u6570\u636E\u6062\u590D",
-    "Description": "\u6587\u4EF6\u6570\u636E\u6062\u590D\u5DE5\u5177",
-    "Action": "msg:\u5373\u5C06\u63A8\u51FA",
-    "Category": "\u5DE5\u5177\u5546\u5E97"
+    "Name": "数据恢复",
+    "Description": "文件数据恢复工具",
+    "Action": "msg:即将推出",
+    "Category": "工具商店"
   },
   {
     "Icon": "icon\\store.png",
-    "Name": "\u8FDC\u7A0B\u684C\u9762",
-    "Description": "\u8FDC\u7A0B\u8FDE\u63A5\u5DE5\u5177",
-    "Action": "msg:\u5373\u5C06\u63A8\u51FA",
-    "Category": "\u5DE5\u5177\u5546\u5E97"
+    "Name": "远程桌面",
+    "Description": "远程连接工具",
+    "Action": "msg:即将推出",
+    "Category": "工具商店"
   }
 ]

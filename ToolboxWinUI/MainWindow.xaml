@@ -9,6 +9,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- 自定义标题栏（扩展至非客户区） -->
@@ -118,12 +119,12 @@
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="navNetwork" Content="网络工具" Tag="network">
                     <NavigationViewItem.Icon>
-                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE774;"/>
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE774;"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="navOther" Content="其他工具" Tag="其他工具">
                     <NavigationViewItem.Icon>
-                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE71C;"/>
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE7C3;"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="navStore" Content="工具商店" Tag="工具商店">
@@ -152,5 +153,13 @@
                 <Grid x:Name="contentArea" Margin="24,8,24,24"/>
             </ScrollViewer>
         </NavigationView>
+        <Grid x:Name="downloadFooter" Grid.Row="2" Height="36" Visibility="Collapsed" Background="{ThemeResource SystemChromeMediumLowColor}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <ProgressBar x:Name="downloadProgressBar" Height="4" VerticalAlignment="Bottom" IsIndeterminate="True"/>
+            <TextBlock x:Name="downloadStatusText" Grid.Column="1" Text="" FontSize="12" VerticalAlignment="Center" Margin="12,0,16,0"/>
+        </Grid>
     </Grid>
 </Window>

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Management;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -30,6 +31,40 @@ public sealed partial class MainWindow : Window
     private const int GWLP_WNDPROC = -4;
     private const int WM_NCLBUTTONDBLCLK = 0x00A3;
     private const int HTCAPTION = 2;
+    private const uint WM_DESTROY = 0x0002;
+    private const uint WM_CLOSE = 0x0010;
+    private const uint WM_USER = 0x0400;
+    private const uint WM_TRAYICON = WM_USER + 1;
+    private const uint NIM_ADD = 0;
+    private const uint NIM_MODIFY = 1;
+    private const uint NIM_DELETE = 2;
+    private const uint NIF_MESSAGE = 1;
+    private const uint NIF_ICON = 2;
+    private const uint NIF_TIP = 4;
+    private const uint NIF_SHOWTIP = 0x80;
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct NOTIFYICONDATA
+    {
+        public int cbSize;
+        public IntPtr hWnd;
+        public uint uID;
+        public uint uFlags;
+        public uint uCallbackMessage;
+        public IntPtr hIcon;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string szTip;
+        public uint dwState;
+        public uint dwStateMask;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+        public string szInfo;
+        public uint uVersion;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+        public string szInfoTitle;
+        public uint dwInfoFlags;
+        public Guid guidItem;
+        public IntPtr hBalloonIcon;
+    }
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
@@ -40,10 +75,49 @@ public sealed partial class MainWindow : Window
     [DllImport("user32.dll", SetLastError = true)]
     private static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
+    [DllImport("shell32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool Shell_NotifyIcon(uint cmd, ref NOTIFYICONDATA data);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr LoadImage(IntPtr hinst, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr CreatePopupMenu();
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool InsertMenu(IntPtr hMenu, uint uPosition, uint uFlags, uint uIDNewItem, string lpNewItem);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool TrackPopupMenu(IntPtr hMenu, uint uFlags, int x, int y, int nReserved, IntPtr hWnd, IntPtr prcRect);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool DestroyMenu(IntPtr hMenu);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    private const uint MF_STRING = 0;
+    private const uint MF_SEPARATOR = 0x800;
+    private const uint TPM_LEFTALIGN = 0;
+    private const uint TPM_BOTTOMALIGN = 0x0020;
+    private const int SW_HIDE = 0;
+    private const int SW_SHOW = 5;
+    private const uint IMAGE_ICON = 1;
+    private const uint LR_LOADFROMFILE = 0x0010;
+
     private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
     private IntPtr _oldWndProc;
     private WndProcDelegate _wndProcDelegate;
+    private NOTIFYICONDATA _trayData;
+    private IntPtr _trayMenu;
+    private bool _trayIconAdded;
+    private IntPtr _appHwnd;
+    private const uint TRAY_SHOW = 1001;
+    private const uint TRAY_EXIT = 1002;
 
     private readonly SolidColorBrush _textPrimaryBrush = new(WColor.FromArgb(255, 30, 30, 30));
     private readonly SolidColorBrush _textSecondaryBrush = new(WColor.FromArgb(255, 100, 100, 100));
@@ -70,6 +144,11 @@ public sealed partial class MainWindow : Window
     private static readonly string FavoritesFile = Path.Combine(DataDir, "favorites.json");
     private static readonly string ToolsFile = Path.Combine(DataDir, "tools.json");
 
+    private NavigationViewItem _navProxyItem;
+    private FileSystemWatcher _proxyWatcher;
+    private static readonly string ProxyExePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ProxyTools", "mihomo", "mihomo.exe");
+    private static readonly string ProxyDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ProxyTools");
+
     public MainWindow()
     {
         InitializeComponent();
@@ -91,11 +170,18 @@ public sealed partial class MainWindow : Window
         _cpuCounter = TryCreateCpuCounter();
         App.ThemeChanged += OnThemeChanged;
         Closed += (s, e) => Cleanup();
+        AppWindow.Closing += (s, e) =>
+        {
+            e.Cancel = true;
+            MinimizeToTray();
+        };
 
         Activated += async (s, e) =>
         {
             if (_loaded) return;
             _loaded = true;
+            UpdateProxyNavItem();
+            SetupProxyWatcher();
             await Task.Run(() =>
             {
                 _cpuInfo = GetCPUInfo();
@@ -150,6 +236,16 @@ public sealed partial class MainWindow : Window
     }
 
     private string _currentTag = "system";
+    private readonly Stack<string> _navHistory = new();
+    private bool _suppressNavHistory;
+    private CancellationTokenSource _pingCts;
+    private CancellationTokenSource _splitCts;
+
+    private void PushNavHistory(string tag)
+    {
+        if (_navHistory.Count == 0 || _navHistory.Peek() != tag)
+            _navHistory.Push(tag);
+    }
 
     private void Cleanup()
     {
@@ -157,6 +253,8 @@ public sealed partial class MainWindow : Window
         _cpuCounter?.Dispose();
         if (_gpuCounters != null)
             foreach (var pc in _gpuCounters) pc.Dispose();
+        _proxyWatcher?.Dispose();
+        DestroyTrayIcon();
         App.ThemeChanged -= OnThemeChanged;
     }
 
@@ -204,7 +302,7 @@ public sealed partial class MainWindow : Window
 
                 _systemInfoCache = null;
                 // 设置页面不自动跳转
-                if (contentArea.Children.Count > 0 && contentArea.Children[0] is Pages.SettingsPage)
+                if (_currentTag == "settings")
                     return;
                 LoadContent(_currentTag);
             }
@@ -259,11 +357,107 @@ public sealed partial class MainWindow : Window
         InitDefaultTools();
     }
 
+    private static string GetToolDescription(string name)
+    {
+        return name switch
+        {
+            "CPUZ" or "CPU-Z" => "CPU 型号/频率/缓存详细检测",
+            "CoreTemp" => "CPU 核心温度实时监控",
+            "LinX" => "CPU 与内存稳定性压力测试",
+            "Prime95" => "CPU 极限压力与稳定性测试",
+            "superpi" => "CPU 单核性能基准测试（圆周率计算）",
+            "wPrime" => "CPU 多核性能基准测试",
+            "ThrottleStop" => "CPU 降压降温与性能调优",
+            "XIANGQI" or "象棋" => "CPU 多核性能基准测试（象棋引擎）",
+            "iva" => "Intel 处理器诊断工具",
+            "FurMark" => "GPU 极限压力与稳定性测试（甜甜圈）",
+            "memtest" or "memtest64" or "memtestpro" => "内存稳定性与错误检测",
+            "tm5" => "内存稳定性压力测试（TestMem5）",
+            "Thaiphoon" => "内存 SPD 信息读取与编辑",
+            "魔方内存盘" => "内存虚拟硬盘加速工具",
+            "DDU" => "显卡驱动彻底卸载与清理",
+            "GPUZ" or "GPU-Z" => "显卡型号/频率/传感器详细检测",
+            "nvidiaInspector" => "NVIDIA 显卡超频与参数监控",
+            "nvidiaProfileInspector" => "NVIDIA 驱动配置文件管理",
+            "dxvachecker" => "DirectX 功能支持检测",
+            "GpuTest_Windows x64" or "GpuTest" => "GPU 跨平台基准性能测试",
+            "AMD显卡驱动下载" => "AMD 显卡驱动在线安装",
+            "Nvidia显卡驱动下载" => "NVIDIA 显卡驱动在线安装",
+            "CrystalDiskInfo" => "硬盘 S.M.A.R.T. 状态检测与健康评估",
+            "CrystalDiskMark" => "硬盘读写速度基准测试",
+            "ASSSDBenchmark" => "SSD 固态硬盘读写性能测试",
+            "ATTODISKBENCHMARK" => "硬盘连续传输速度基准测试",
+            "TxBENCH" => "SSD 读写性能测试与 Trim 检测",
+            "HDTune" => "硬盘健康/基准/错误扫描综合检测",
+            "DiskGenius" => "硬盘分区管理与数据恢复",
+            "Defraggler" => "磁盘碎片分析与整理",
+            "finaldata" => "误删文件数据恢复",
+            "魔方数据恢复" => "误删除文件快速恢复",
+            "WizTree" => "磁盘空间占用分析（极速）",
+            "windirstat" => "磁盘空间占用可视化分析",
+            "SpaceSniffer" => "磁盘空间占用树状图分析",
+            "H2testw" => "U盘/SD 卡扩容骗局检测与完整性验证",
+            "mydisktest" => "U盘/SD 卡真实容量与速度检测",
+            "URWTEST" => "USB 存储设备读写稳定性测试",
+            "FlashMaster" => "U盘主控信息检测与量产工具",
+            "LLFTOOL" => "硬盘低级格式化（低格）",
+            "SSDZ" => "SSD 固态硬盘详细信息检测",
+            "SSD utils" => "SSD 读写优化与维护工具",
+            "AresonMouseTest" => "鼠标按键响应与灵敏度测试",
+            "Keyboard Test Utility" => "键盘按键功能完整性测试",
+            "KeyTweak" => "键盘按键映射自定义修改",
+            "MOUSERATE" => "鼠标回报率与响应速度测试",
+            "MouseTester" => "鼠标丢帧与精准度分析",
+            "鼠标单机变双击测试器" => "鼠标微动双击故障检测",
+            "色域检测" => "显示器色域覆盖率检测",
+            "在线屏幕测试" => "显示器坏点/漏光/灰度在线检测",
+            "UFO测试" => "显示器刷新率与拖影在线测试",
+            "AIDA64" => "全面硬件信息检测与稳定性测试",
+            "hwinfo" or "HWiNFO" => "深度硬件传感器信息监控",
+            "HWMonitor" => "硬件温度/电压/风扇转速监控",
+            "speccy" => "系统硬件信息快速查看",
+            "RWEverything" => "硬件寄存器读取与低级访问",
+            "BatteryInfoView" => "笔记本电池循环次数与健康度检测",
+            "bluescreenview" => "蓝屏崩溃日志分析与查看",
+            "DesktopOK" => "桌面图标布局备份与恢复",
+            "DirectX_Repair" => "DirectX 运行时组件修复",
+            "Dism++" => "系统镜像管理、优化与修复",
+            "Everything" => "本地文件秒级快速搜索",
+            "Geek Uninstaller" => "软件彻底卸载与残留清理",
+            "gifcam" => "屏幕区域 GIF 动态录制",
+            "MSIAfterburnerSetup" => "显卡超频与游戏内硬件监控",
+            "next_itellyou" => "微软官方系统镜像下载查询",
+            "procexp" or "Process Explorer" => "高级进程管理与排查",
+            "rufus" => "启动盘制作工具（U盘 ISO 写入）",
+            "ULTRAISO" => "光盘镜像编辑与制作",
+            "ventoy" => "多系统启动 U盘 制作工具",
+            "WinDbg" => "Windows 内核级调试分析",
+            "WTGA" => "Windows To Go 便携系统制作",
+            "皮肤编辑器" => "软件界面皮肤自定义编辑",
+            "天梯图" => "硬件性能排行天梯图查看",
+            "游戏加加" => "游戏内硬件监控与性能优化",
+            _ => "硬件检测与系统工具"
+        };
+    }
+
     private void MergeScannedTools()
     {
         var baseDir = AppDomain.CurrentDomain.BaseDirectory;
         var toolsDir = Path.Combine(baseDir, "tools");
-        if (!Directory.Exists(toolsDir)) return;
+
+        // 更新已有工具的描述
+        bool changed = false;
+        foreach (var tool in _allTools)
+        {
+            var newDesc = GetToolDescription(tool.Name);
+            if (tool.Description != newDesc)
+            {
+                tool.Description = newDesc;
+                changed = true;
+            }
+        }
+
+        if (!Directory.Exists(toolsDir)) { if (changed) SaveTools(); return; }
 
         // 收集当前 tools 目录中所有存在的可执行文件路径
         var existingFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -282,8 +476,6 @@ public sealed partial class MainWindow : Window
                     existingFiles.Add(Path.GetRelativePath(baseDir, f));
             }
         }
-
-        bool changed = false;
 
         // 删除已不存在的工具
         for (int i = _allTools.Count - 1; i >= 0; i--)
@@ -323,7 +515,7 @@ public sealed partial class MainWindow : Window
                 {
                     Icon = relPath,
                     Name = toolName,
-                    Description = $"{category}工具",
+                    Description = GetToolDescription(toolName),
                     Action = relPath,
                     Category = category
                 });
@@ -375,7 +567,7 @@ public sealed partial class MainWindow : Window
                         {
                             Icon = relPath,
                             Name = toolName,
-                            Description = $"{category}工具",
+                            Description = GetToolDescription(toolName),
                             Action = relPath,
                             Category = MapCategory(category)
                         });
@@ -400,10 +592,7 @@ public sealed partial class MainWindow : Window
             new ToolInfo { Icon=$"{sys32}\\mspaint.exe",   Name="画图工具",    Description="Windows 画图工具",     Action="mspaint.exe",               Category="其他工具" },
             new ToolInfo { Icon=$"{sys32}\\cmd.exe",       Name="命令提示符",  Description="CMD 命令行工具",       Action="cmd.exe",                   Category="其他工具" },
             new ToolInfo { Icon=$"{sys32}\\control.exe",   Name="控制面板",    Description="Windows 控制面板",     Action="control.exe",               Category="其他工具" },
-            new ToolInfo { Icon="icon\\store.png",         Name="驱动管理",    Description="驱动安装与更新",       Action="msg:即将推出",              Category="工具商店" },
-            new ToolInfo { Icon="icon\\store.png",         Name="系统备份",    Description="系统备份与还原",       Action="msg:即将推出",              Category="工具商店" },
-            new ToolInfo { Icon="icon\\store.png",         Name="数据恢复",    Description="文件数据恢复工具",     Action="msg:即将推出",              Category="工具商店" },
-            new ToolInfo { Icon="icon\\store.png",         Name="远程桌面",    Description="远程连接工具",         Action="msg:即将推出",              Category="工具商店" },
+            new ToolInfo { Icon="\uEE47",                  Name="ProxyTools",  Description="一个简易的代理工具插件，基于 Mihomo 内核", Action="dl:proxytools",           Category="工具商店" },
         ]);
 
         _allTools = tools;
@@ -421,6 +610,7 @@ public sealed partial class MainWindow : Window
             "外设工具" => "外设工具",
             "烤鸡工具" => "烤鸡工具",
             "综合检测" => "CPU工具",
+            "代理工具" => "代理工具",
             "其他工具" => "其他工具",
             "系统工具" => "其他工具",
             "显示工具" => "外设工具",
@@ -449,6 +639,8 @@ public sealed partial class MainWindow : Window
         if (args.SelectedItem is NavigationViewItem item)
         {
             var tag = item.Tag?.ToString() ?? "system";
+            if (tag != _currentTag && !_suppressNavHistory)
+                PushNavHistory(_currentTag);
             LoadContent(tag);
         }
     }
@@ -466,8 +658,7 @@ public sealed partial class MainWindow : Window
         _chartTimer?.Stop();
         contentArea.Children.Clear();
 
-        // 显示/隐藏返回按钮
-        backBtn.Visibility = tag == "system" ? Visibility.Collapsed : Visibility.Visible;
+        backBtn.Visibility = _navHistory.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
         switch (tag)
         {
@@ -483,11 +674,86 @@ public sealed partial class MainWindow : Window
                 navView.Header = "网络工具";
                 ShowNetworkTools();
                 break;
+            case "proxy":
+                if (File.Exists(ProxyExePath))
+                {
+                    navView.Header = "代理工具";
+                    ShowProxyTools();
+                }
+                else
+                {
+                    UpdateProxyNavItem();
+                    navView.SelectedItem = navSystem;
+                    LoadContent("system");
+                }
+                break;
             default:
                 navView.Header = tag;
                 ShowCategory(tag);
                 break;
         }
+    }
+
+    private void UpdateProxyNavItem()
+    {
+        var menuItems = navView.MenuItems;
+        bool exists = File.Exists(ProxyExePath);
+        bool hasItem = _navProxyItem != null && menuItems.Contains(_navProxyItem);
+
+        if (exists && !hasItem)
+        {
+            _navProxyItem = new NavigationViewItem
+            {
+                Content = "代理工具",
+                Tag = "proxy",
+                Icon = new FontIcon { Glyph = "\xEE47", FontFamily = (Microsoft.UI.Xaml.Media.FontFamily)Application.Current.Resources["SymbolThemeFontFamily"] }
+            };
+            int insertIndex = 0;
+            for (int i = 0; i < menuItems.Count; i++)
+            {
+                if (menuItems[i] is NavigationViewItem item && item.Tag?.ToString() == "network")
+                {
+                    insertIndex = i + 1;
+                    break;
+                }
+            }
+            menuItems.Insert(insertIndex, _navProxyItem);
+        }
+        else if (!exists && hasItem)
+        {
+            menuItems.Remove(_navProxyItem);
+            _navProxyItem = null;
+        }
+    }
+
+    private void SetupProxyWatcher()
+    {
+        try
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            _proxyWatcher = new FileSystemWatcher(baseDir)
+            {
+                EnableRaisingEvents = true,
+                NotifyFilter = NotifyFilters.DirectoryName | NotifyFilters.FileName,
+                IncludeSubdirectories = true
+            };
+            _proxyWatcher.Created += (s, e) =>
+            {
+                if (e.FullPath.IndexOf("ProxyTools\\mihomo\\mihomo.exe", StringComparison.OrdinalIgnoreCase) >= 0)
+                    DispatcherQueue.TryEnqueue(() => UpdateProxyNavItem());
+            };
+            _proxyWatcher.Deleted += (s, e) =>
+            {
+                if (e.FullPath.IndexOf("ProxyTools\\mihomo\\mihomo.exe", StringComparison.OrdinalIgnoreCase) >= 0)
+                    DispatcherQueue.TryEnqueue(() => UpdateProxyNavItem());
+            };
+            _proxyWatcher.Renamed += (s, e) =>
+            {
+                if (e.FullPath.IndexOf("ProxyTools\\mihomo\\mihomo.exe", StringComparison.OrdinalIgnoreCase) >= 0)
+                    DispatcherQueue.TryEnqueue(() => UpdateProxyNavItem());
+            };
+        }
+        catch { }
     }
 
     #endregion
@@ -530,12 +796,18 @@ public sealed partial class MainWindow : Window
         contentArea.Children.Add(CreateToolGrid(tools));
     }
 
+    private void ShowProxyTools()
+    {
+        contentArea.Children.Add(new ProxyTools.ProxyPage());
+    }
+
     private void ShowNetworkTools()
     {
         var stackPanel = new StackPanel();
 
         // 选项卡
         var tabBar = new Grid { Margin = new Thickness(0, 0, 0, 16) };
+        tabBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         tabBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         tabBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         tabBar.ColumnDefinitions.Add(new ColumnDefinition());
@@ -559,10 +831,22 @@ public sealed partial class MainWindow : Window
             BorderThickness = new Thickness(0),
             Margin = new Thickness(8, 0, 0, 0)
         };
+        var speedTabBtn = new Button
+        {
+            Content = "网速测试",
+            FontSize = 15,
+            Padding = new Thickness(20, 8, 20, 8),
+            Background = new SolidColorBrush(WColor.FromArgb(0, 0, 0, 0)),
+            Foreground = _textSecondaryBrush,
+            BorderThickness = new Thickness(0),
+            Margin = new Thickness(8, 0, 0, 0)
+        };
         Grid.SetColumn(ipTabBtn, 0);
         Grid.SetColumn(splitTabBtn, 1);
+        Grid.SetColumn(speedTabBtn, 2);
         tabBar.Children.Add(ipTabBtn);
         tabBar.Children.Add(splitTabBtn);
+        tabBar.Children.Add(speedTabBtn);
         stackPanel.Children.Add(tabBar);
 
         var ipPanel = new StackPanel();
@@ -573,10 +857,28 @@ public sealed partial class MainWindow : Window
         BuildSplitTab(splitPanel);
         stackPanel.Children.Add(splitPanel);
 
+        var speedPanel = new StackPanel { Visibility = Visibility.Collapsed };
+        BuildSpeedTab(speedPanel);
+        stackPanel.Children.Add(speedPanel);
+
         contentArea.Children.Add(stackPanel);
 
-        ipTabBtn.Click += (s, e) => SwitchTab(ipTabBtn, splitTabBtn, ipPanel, splitPanel);
-        splitTabBtn.Click += (s, e) => SwitchTab(splitTabBtn, ipTabBtn, splitPanel, ipPanel);
+        ipTabBtn.Click += (s, e) => SwitchTab3(ipTabBtn, splitTabBtn, speedTabBtn, ipPanel, splitPanel, speedPanel);
+        splitTabBtn.Click += (s, e) => SwitchTab3(splitTabBtn, ipTabBtn, speedTabBtn, splitPanel, ipPanel, speedPanel);
+        speedTabBtn.Click += (s, e) => SwitchTab3(speedTabBtn, ipTabBtn, splitTabBtn, speedPanel, ipPanel, splitPanel);
+    }
+
+    private void SwitchTab3(Button active, Button inactive1, Button inactive2, Panel activePanel, Panel inactivePanel1, Panel inactivePanel2)
+    {
+        active.Background = new SolidColorBrush(WColor.FromArgb(255, 0, 120, 212));
+        active.Foreground = new SolidColorBrush(WColor.FromArgb(255, 255, 255, 255));
+        inactive1.Background = new SolidColorBrush(WColor.FromArgb(0, 0, 0, 0));
+        inactive1.Foreground = _textSecondaryBrush;
+        inactive2.Background = new SolidColorBrush(WColor.FromArgb(0, 0, 0, 0));
+        inactive2.Foreground = _textSecondaryBrush;
+        activePanel.Visibility = Visibility.Visible;
+        inactivePanel1.Visibility = Visibility.Collapsed;
+        inactivePanel2.Visibility = Visibility.Collapsed;
     }
 
     private void SwitchTab(Button active, Button inactive, Panel activePanel, Panel inactivePanel)
@@ -671,7 +973,6 @@ public sealed partial class MainWindow : Window
         pingHeader.Children.Add(new TextBlock { Text = "网络连通性测试", FontSize = 18, FontWeight = FontWeights.Bold, VerticalAlignment = VerticalAlignment.Center });
         var pingRefreshBtn = new Button
         {
-            Content = "🚀",
             FontSize = 18,
             Padding = new Thickness(10, 4, 10, 4),
             Background = new SolidColorBrush(WColor.FromArgb(255, 0, 120, 212)),
@@ -679,6 +980,7 @@ public sealed partial class MainWindow : Window
             BorderThickness = new Thickness(0),
             HorizontalAlignment = HorizontalAlignment.Right,
         };
+        pingRefreshBtn.Content = new FontIcon { Glyph = "\uE72C", FontFamily = new FontFamily("Segoe Fluent Icons"), FontSize = 16 };
         Grid.SetColumn(pingRefreshBtn, 1);
         pingHeader.Children.Add(pingRefreshBtn);
         pingStack.Children.Add(pingHeader);
@@ -690,11 +992,8 @@ public sealed partial class MainWindow : Window
             ("淘宝", "taobao.com", (string)null),
             ("字节跳动", "bytedance.com", "douyin.png")
         };
-        var pingGrid1 = new Grid();
-        pingGrid1.ColumnDefinitions.Add(new ColumnDefinition());
-        pingGrid1.ColumnDefinitions.Add(new ColumnDefinition());
-        pingGrid1.ColumnDefinitions.Add(new ColumnDefinition());
-        var domesticLabels = AddPingRows(pingGrid1, domesticTargets);
+        var pingGrid1 = new Grid { Margin = new Thickness(0, 0, 0, 8) };
+        var domesticCards = AddPingCards(pingGrid1, domesticTargets);
         pingStack.Children.Add(pingGrid1);
 
         pingStack.Children.Add(new TextBlock { Text = "国际", FontSize = 14, Foreground = new SolidColorBrush(WColor.FromArgb(255, 0, 120, 212)), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 4) });
@@ -705,10 +1004,7 @@ public sealed partial class MainWindow : Window
             ("YouTube", "youtube.com", (string)null)
         };
         var pingGrid2 = new Grid();
-        pingGrid2.ColumnDefinitions.Add(new ColumnDefinition());
-        pingGrid2.ColumnDefinitions.Add(new ColumnDefinition());
-        pingGrid2.ColumnDefinitions.Add(new ColumnDefinition());
-        var intlLabels = AddPingRows(pingGrid2, intlTargets);
+        var intlCards = AddPingCards(pingGrid2, intlTargets);
         pingStack.Children.Add(pingGrid2);
 
         pingCard.Child = pingStack;
@@ -720,14 +1016,24 @@ public sealed partial class MainWindow : Window
             var idx = i;
             _ = QuerySourceIP(sources[idx].url, sourceLabels[idx]);
         }
-        _ = RunPingTests(domesticTargets, domesticLabels);
-        _ = RunPingTests(intlTargets, intlLabels);
+        async Task RunAllPings(CancellationToken ct)
+        {
+            // 重置所有圆点
+            foreach (var c in domesticCards.Concat(intlCards))
+                foreach (var d in c.Dots)
+                    d.Fill = new SolidColorBrush(WColor.FromArgb(255, 200, 200, 200));
+            await RunPingTestsDetailed(domesticTargets, domesticCards, ct);
+            if (!ct.IsCancellationRequested)
+                await RunPingTestsDetailed(intlTargets, intlCards, ct);
+        }
+
+        _pingCts = new CancellationTokenSource();
+        _ = RunAllPings(_pingCts.Token);
         pingRefreshBtn.Click += async (s, e) =>
         {
-            pingRefreshBtn.IsEnabled = false;
-            await RunPingTests(domesticTargets, domesticLabels);
-            await RunPingTests(intlTargets, intlLabels);
-            pingRefreshBtn.IsEnabled = true;
+            _pingCts?.Cancel();
+            _pingCts = new CancellationTokenSource();
+            await RunAllPings(_pingCts.Token);
         };
     }
 
@@ -735,7 +1041,6 @@ public sealed partial class MainWindow : Window
     {
         var refreshBtn = new Button
         {
-            Content = "🚀 测试全部",
             FontSize = 14,
             Padding = new Thickness(16, 6, 16, 6),
             Background = new SolidColorBrush(WColor.FromArgb(255, 0, 120, 212)),
@@ -744,6 +1049,10 @@ public sealed partial class MainWindow : Window
             HorizontalAlignment = HorizontalAlignment.Left,
             Margin = new Thickness(0, 0, 0, 12)
         };
+        var btnContent = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        btnContent.Children.Add(new FontIcon { Glyph = "\uE72C", FontFamily = new FontFamily("Segoe Fluent Icons"), FontSize = 14 });
+        btnContent.Children.Add(new TextBlock { Text = "测试全部", VerticalAlignment = VerticalAlignment.Center });
+        refreshBtn.Content = btnContent;
         parent.Children.Add(refreshBtn);
 
         var scrollViewer = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
@@ -755,7 +1064,7 @@ public sealed partial class MainWindow : Window
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(200) });
         header.Children.Add(new TextBlock { Text = "网站", FontSize = 16, FontWeight = FontWeights.Bold, Foreground = _textSecondaryBrush });
-        var ipHeader = new TextBlock { Text = "IP 地址", FontSize = 16, FontWeight = FontWeights.Bold, Foreground = _textSecondaryBrush };
+        var ipHeader = new TextBlock { Text = "出口 IP", FontSize = 16, FontWeight = FontWeights.Bold, Foreground = _textSecondaryBrush };
         Grid.SetColumn(ipHeader, 1);
         header.Children.Add(ipHeader);
         var locHeader = new TextBlock { Text = "归属地", FontSize = 16, FontWeight = FontWeights.Bold, Foreground = _textSecondaryBrush };
@@ -763,25 +1072,32 @@ public sealed partial class MainWindow : Window
         header.Children.Add(locHeader);
         tablePanel.Children.Add(header);
 
-        var sites = new (string name, string domain, string tag, string icon)[]
+        var sites = new (string name, string echoUrl, string tag, string icon)[]
         {
-            ("哔哩哔哩", "bilibili.com", "国内", "bilibili.png"),
-            ("阿里巴巴", "alibaba.com", "国内", "ali.png"),
-            ("网易", "163.com", "国内", null),
-            ("字节跳动", "bytedance.com", "国内", "douyin.png"),
-            ("腾讯", "qq.com", "国内", null),
-            ("百度", "baidu.com", "国内", null),
-            ("Cloudflare", "cloudflare.com", "国际", null),
-            ("TikTok", "tiktok.com", "国际", null),
-            ("Discord", "discord.com", "国际", null),
-            ("X (Twitter)", "x.com", "国际", null),
-            ("Medium", "medium.com", "国际", null),
-            ("ChatGPT", "chatgpt.com", "AI", null),
-            ("OpenAI", "openai.com", "AI", null),
-            ("Claude", "claude.ai", "AI", null),
-            ("Perplexity", "perplexity.ai", "AI", null),
-            ("Coinbase", "coinbase.com", "Crypto", null),
-            ("OKX", "okx.com", "Crypto", null),
+
+            // 国内
+            ("Cloudflare 中国", "https://www.cloudflare.com/cdn-cgi/trace", "国内", "cloudflare.png"),
+            // Cloudflare 各节点（国际）
+            ("Cloudflare 香港", "https://www.cloudflare.com/cdn-cgi/trace", "国际", "cloudflare.png"),
+            ("Cloudflare 日本", "https://www.cloudflare.com/cdn-cgi/trace", "国际", "cloudflare.png"),
+            ("Cloudflare 美国", "https://www.cloudflare.com/cdn-cgi/trace", "国际", "cloudflare.png"),
+            ("Cloudflare 英国", "https://www.cloudflare.com/cdn-cgi/trace", "国际", "cloudflare.png"),
+            // AI
+            ("ChatGPT", "https://chatgpt.com/cdn-cgi/trace", "AI", "chatgpt.png"),
+            ("Claude", "https://claude.ai/cdn-cgi/trace", "AI", null),
+            ("Perplexity", "https://perplexity.ai/cdn-cgi/trace", "AI", null),
+            // 开发
+            ("jsDelivr", "https://cdn.jsdelivr.net/cdn-cgi/trace", "开发", "jsdelivr.svg"),
+            ("GitHub", "https://github.com/cdn-cgi/trace", "开发", null),
+            // 社区
+            ("X (Twitter)", "https://x.com/cdn-cgi/trace", "社区", "x.png"),
+            ("Discord", "https://discord.com/cdn-cgi/trace", "社区", "discord.png"),
+            ("Medium", "https://medium.com/cdn-cgi/trace", "社区", "medium.png"),
+            // 加密货币
+            ("Coinbase", "https://coinbase.com/cdn-cgi/trace", "Crypto", "coinbase.svg"),
+            ("OKX", "https://okx.com/cdn-cgi/trace", "Crypto", "okx.png"),
+            // 游戏
+            ("Epic Games", "https://epicgames.com/cdn-cgi/trace", "游戏", "epicgames.png"),
         };
 
         var siteLabels = new (TextBlock ip, TextBlock loc)[sites.Length];
@@ -796,7 +1112,10 @@ public sealed partial class MainWindow : Window
                     Background = currentGroup == "国内" ? new SolidColorBrush(WColor.FromArgb(255, 255, 140, 0))
                         : currentGroup == "国际" ? new SolidColorBrush(WColor.FromArgb(255, 0, 120, 212))
                         : currentGroup == "AI" ? new SolidColorBrush(WColor.FromArgb(255, 0, 180, 100))
-                        : new SolidColorBrush(WColor.FromArgb(255, 150, 80, 200)),
+                        : currentGroup == "开发" ? new SolidColorBrush(WColor.FromArgb(255, 100, 100, 200))
+                        : currentGroup == "社区" ? new SolidColorBrush(WColor.FromArgb(255, 200, 100, 50))
+                        : currentGroup == "Crypto" ? new SolidColorBrush(WColor.FromArgb(255, 150, 80, 200))
+                        : new SolidColorBrush(WColor.FromArgb(255, 0, 150, 136)),
                     CornerRadius = new CornerRadius(3),
                     Padding = new Thickness(6, 2, 6, 2),
                     Margin = new Thickness(0, 12, 0, 4),
@@ -811,9 +1130,9 @@ public sealed partial class MainWindow : Window
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(200) });
             var namePanel = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            var iconFile = sites[i].icon ?? sites[i].domain.Split('.')[0] + ".png";
-            var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon", iconFile);
-            if (File.Exists(iconPath))
+            var iconFile = sites[i].icon;
+            var iconPath = iconFile != null ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon", iconFile) : null;
+            if (iconPath != null && File.Exists(iconPath))
             {
                 try
                 {
@@ -840,33 +1159,402 @@ public sealed partial class MainWindow : Window
 
         parent.Children.Add(scrollViewer);
 
-        refreshBtn.Click += async (s, e) =>
+        async Task RunSplitTest(CancellationToken ct)
         {
-            refreshBtn.IsEnabled = false;
-            refreshBtn.Content = "🚀 测试中...";
-            for (int i = 0; i < sites.Length; i++)
+            refreshBtn.Content = "测试中...";
+            var tasks = sites.Select(async (site, i) =>
             {
-                siteLabels[i].ip.Text = "解析中...";
+                if (ct.IsCancellationRequested) return;
+                siteLabels[i].ip.Text = "检测中...";
                 siteLabels[i].loc.Text = "";
                 try
                 {
-                    var addr = Dns.GetHostAddresses(sites[i].domain);
-                    var ipv4 = addr.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
-                    if (ipv4 != null)
+                    using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                    cts.CancelAfter(10000);
+                    using var client = new System.Net.Http.HttpClient();
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0");
+                    var resp = await client.GetStringAsync(site.echoUrl, cts.Token);
+                    string ip = null;
+                    if (site.echoUrl.Contains("cdn-cgi/trace"))
                     {
-                        siteLabels[i].ip.Text = ipv4.ToString();
-                        _ = QueryGeo(ipv4.ToString(), siteLabels[i].loc);
+                        var match = Regex.Match(resp, @"ip=(\S+)");
+                        ip = match.Success ? match.Groups[1].Value : null;
                     }
                     else
                     {
-                        var ipv6 = addr.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6);
-                        siteLabels[i].ip.Text = ipv6?.ToString() ?? "无结果";
+                        ip = "可访问";
+                        _ = Task.Run(() =>
+                        {
+                            try
+                            {
+                                var domain = new Uri(site.echoUrl).Host;
+                                var addrs = Dns.GetHostAddresses(domain);
+                                var dnsIp = addrs.FirstOrDefault(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
+                                if (dnsIp != null)
+                                    DispatcherQueue.TryEnqueue(() => siteLabels[i].ip.Text = dnsIp.ToString());
+                            }
+                            catch { }
+                        }, ct);
+                    }
+                    if (ip != null)
+                    {
+                        DispatcherQueue.TryEnqueue(() => siteLabels[i].ip.Text = ip);
+                        _ = QueryGeo(ip, siteLabels[i].loc);
+                    }
+                    else
+                        DispatcherQueue.TryEnqueue(() => siteLabels[i].ip.Text = "无结果");
+                }
+                catch
+                {
+                    DispatcherQueue.TryEnqueue(() => siteLabels[i].ip.Text = "超时/阻断");
+                }
+            });
+            await Task.WhenAll(tasks);
+            var doneContent = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+            doneContent.Children.Add(new FontIcon { Glyph = "\uE72C", FontFamily = new FontFamily("Segoe Fluent Icons"), FontSize = 14 });
+            doneContent.Children.Add(new TextBlock { Text = "测试全部", VerticalAlignment = VerticalAlignment.Center });
+            refreshBtn.Content = doneContent;
+        }
+
+        _splitCts = new CancellationTokenSource();
+        _ = RunSplitTest(_splitCts.Token);
+        refreshBtn.Click += async (s, e) =>
+        {
+            _splitCts?.Cancel();
+            _splitCts = new CancellationTokenSource();
+            await RunSplitTest(_splitCts.Token);
+        };
+    }
+
+    private void BuildSpeedTab(StackPanel parent)
+    {
+        var cfBase = "https://speed.cloudflare.com";
+
+        var card = new Border { Background = _cardBgBrush, BorderBrush = _cardBorderBrush, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Padding = new Thickness(24), Margin = new Thickness(0, 0, 0, 12) };
+        var stack = new StackPanel { Spacing = 16 };
+
+        stack.Children.Add(new TextBlock { Text = "网速测试", FontSize = 22, FontWeight = FontWeights.Bold });
+
+        var statusText = new TextBlock { Text = "点击下方按钮开始测试", FontSize = 14, Foreground = _textSecondaryBrush };
+
+        // 延迟 / 下载 / 上传 结果卡片
+        var resultGrid = new Grid();
+        resultGrid.ColumnDefinitions.Add(new ColumnDefinition());
+        resultGrid.ColumnDefinitions.Add(new ColumnDefinition());
+        resultGrid.ColumnDefinitions.Add(new ColumnDefinition());
+        var latencyPanel = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
+        latencyPanel.Children.Add(new TextBlock { Text = "延迟", FontSize = 13, Foreground = _textSecondaryBrush, HorizontalAlignment = HorizontalAlignment.Center });
+        var latencyVal = new TextBlock { Text = "-- ms", FontSize = 28, FontWeight = FontWeights.Bold, Foreground = _textPrimaryBrush, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 4, 0, 0) };
+        latencyPanel.Children.Add(latencyVal);
+        resultGrid.Children.Add(latencyPanel);
+        var dlPanel = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
+        dlPanel.Children.Add(new TextBlock { Text = "下载", FontSize = 13, Foreground = _textSecondaryBrush, HorizontalAlignment = HorizontalAlignment.Center });
+        var dlVal = new TextBlock { Text = "-- Mbps", FontSize = 28, FontWeight = FontWeights.Bold, Foreground = _textPrimaryBrush, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 4, 0, 0) };
+        dlPanel.Children.Add(dlVal);
+        Grid.SetColumn(dlPanel, 1);
+        resultGrid.Children.Add(dlPanel);
+        var ulPanel = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
+        ulPanel.Children.Add(new TextBlock { Text = "上传", FontSize = 13, Foreground = _textSecondaryBrush, HorizontalAlignment = HorizontalAlignment.Center });
+        var ulVal = new TextBlock { Text = "-- Mbps", FontSize = 28, FontWeight = FontWeights.Bold, Foreground = _textPrimaryBrush, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 4, 0, 0) };
+        ulPanel.Children.Add(ulVal);
+        Grid.SetColumn(ulPanel, 2);
+        resultGrid.Children.Add(ulPanel);
+        stack.Children.Add(resultGrid);
+
+        // 下载实时速度图表
+        var chartLabel = new TextBlock { Text = "下载速度", FontSize = 14, FontWeight = FontWeights.SemiBold, Foreground = _textSecondaryBrush, Margin = new Thickness(0, 8, 0, 4) };
+        stack.Children.Add(chartLabel);
+        var dlChartBorder = new Border
+        {
+            Background = new SolidColorBrush(WColor.FromArgb(20, 0, 120, 212)),
+            CornerRadius = new CornerRadius(8),
+            Height = 150,
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+        var dlChartGrid = new Grid();
+        var dlChartCanvas = new Canvas();
+        var dlChartLine = new Microsoft.UI.Xaml.Shapes.Polyline
+        {
+            Stroke = new SolidColorBrush(WColor.FromArgb(255, 0, 120, 212)),
+            StrokeThickness = 2,
+            StrokeLineJoin = PenLineJoin.Round
+        };
+        var dlChartFill = new Microsoft.UI.Xaml.Shapes.Polygon
+        {
+            Fill = new SolidColorBrush(WColor.FromArgb(60, 0, 120, 212)),
+        };
+        dlChartCanvas.Children.Add(dlChartFill);
+        dlChartCanvas.Children.Add(dlChartLine);
+        dlChartGrid.Children.Add(dlChartCanvas);
+        var dlSpeedOverlay = new TextBlock
+        {
+            Text = "-- Mbps",
+            FontSize = 20,
+            FontWeight = FontWeights.Bold,
+            Foreground = new SolidColorBrush(WColor.FromArgb(255, 0, 120, 212)),
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, 8, 12, 0)
+        };
+        dlChartGrid.Children.Add(dlSpeedOverlay);
+        dlChartBorder.Child = dlChartGrid; // 改为用 Grid 包装
+        stack.Children.Add(dlChartBorder);
+
+        // 上传实时速度图表
+        var ulChartLabel = new TextBlock { Text = "上传速度", FontSize = 14, FontWeight = FontWeights.SemiBold, Foreground = _textSecondaryBrush, Margin = new Thickness(0, 8, 0, 4) };
+        stack.Children.Add(ulChartLabel);
+        var ulChartBorder = new Border
+        {
+            Background = new SolidColorBrush(WColor.FromArgb(20, 16, 137, 62)),
+            CornerRadius = new CornerRadius(8),
+            Height = 150,
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+        var ulChartGrid = new Grid();
+        var ulChartCanvas = new Canvas();
+        var ulChartLine = new Microsoft.UI.Xaml.Shapes.Polyline
+        {
+            Stroke = new SolidColorBrush(WColor.FromArgb(255, 16, 137, 62)),
+            StrokeThickness = 2,
+            StrokeLineJoin = PenLineJoin.Round
+        };
+        var ulChartFill = new Microsoft.UI.Xaml.Shapes.Polygon
+        {
+            Fill = new SolidColorBrush(WColor.FromArgb(60, 16, 137, 62)),
+        };
+        ulChartCanvas.Children.Add(ulChartFill);
+        ulChartCanvas.Children.Add(ulChartLine);
+        ulChartGrid.Children.Add(ulChartCanvas);
+        var ulSpeedOverlay = new TextBlock
+        {
+            Text = "-- Mbps",
+            FontSize = 20,
+            FontWeight = FontWeights.Bold,
+            Foreground = new SolidColorBrush(WColor.FromArgb(255, 16, 137, 62)),
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, 8, 12, 0)
+        };
+        ulChartGrid.Children.Add(ulSpeedOverlay);
+        ulChartBorder.Child = ulChartGrid;
+        stack.Children.Add(ulChartBorder);
+
+        // 进度条
+        var progressBar = new ProgressBar { Value = 0, Minimum = 0, Maximum = 100, Height = 6, Visibility = Visibility.Collapsed };
+        stack.Children.Add(progressBar);
+        stack.Children.Add(statusText);
+
+        var startBtn = new Button
+        {
+            Content = "⟳ 开始测试",
+            FontSize = 15,
+            Padding = new Thickness(24, 10, 24, 10),
+            Background = new SolidColorBrush(WColor.FromArgb(255, 0, 120, 212)),
+            Foreground = new SolidColorBrush(WColor.FromArgb(255, 255, 255, 255)),
+            BorderThickness = new Thickness(0),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 8, 0, 0)
+        };
+        stack.Children.Add(startBtn);
+
+        card.Child = stack;
+        parent.Children.Add(card);
+
+        CancellationTokenSource speedCts = null;
+
+        async Task RunSpeedTest(CancellationToken ct)
+        {
+            startBtn.IsEnabled = false;
+            startBtn.Content = "测试中...";
+            progressBar.Visibility = Visibility.Visible;
+            progressBar.Value = 0;
+            latencyVal.Text = "-- ms";
+            dlVal.Text = "-- Mbps";
+            ulVal.Text = "-- Mbps";
+
+            using var client = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0");
+
+            try
+            {
+                // 延迟测试
+                statusText.Text = "延迟测试中...";
+                progressBar.Value = 5;
+                using var ping = new System.Net.NetworkInformation.Ping();
+                var pingReply = await ping.SendPingAsync("speed.cloudflare.com", 5000);
+                if (pingReply.Status == System.Net.NetworkInformation.IPStatus.Success && !ct.IsCancellationRequested)
+                {
+                    latencyVal.Text = $"{pingReply.RoundtripTime} ms";
+                    latencyVal.Foreground = pingReply.RoundtripTime < 50
+                        ? new SolidColorBrush(WColor.FromArgb(255, 0, 180, 100))
+                        : pingReply.RoundtripTime < 150
+                            ? new SolidColorBrush(WColor.FromArgb(255, 255, 140, 0))
+                            : new SolidColorBrush(WColor.FromArgb(255, 220, 50, 50));
+                }
+
+                // 下载测试（分多阶段）
+                if (!ct.IsCancellationRequested)
+                {
+                    statusText.Text = "下载测试中...";
+                    dlChartLine.Points.Clear();
+                    dlChartFill.Points.Clear();
+                    dlChartCanvas.Width = dlChartBorder.ActualWidth > 0 ? dlChartBorder.ActualWidth : 600;
+                    dlChartCanvas.Height = dlChartBorder.ActualHeight > 0 ? dlChartBorder.ActualHeight : 150;
+                    var samples = new List<double>();
+                    var sw = Stopwatch.StartNew();
+
+                    var dlSizes = new long[] { 10 * 1024 * 1024, 25 * 1024 * 1024, 50 * 1024 * 1024 };
+                    double totalDlMbps = 0;
+                    int dlCount = 0;
+                    DateTime lastSample = DateTime.UtcNow;
+                    long lastTotalRead = 0;
+                    long overallRead = 0;
+
+                    for (int s = 0; s < dlSizes.Length && !ct.IsCancellationRequested; s++)
+                    {
+                        progressBar.Value = 5 + (s + 1) * 25;
+                        statusText.Text = $"下载测试 ({s + 1}/{dlSizes.Length})...";
+                        var resp = await client.GetStreamAsync($"{cfBase}/__down?bytes={dlSizes[s]}");
+                        var buffer = new byte[81920];
+                        long totalRead = 0;
+                        while (!ct.IsCancellationRequested)
+                        {
+                            var read = await resp.ReadAsync(buffer, 0, buffer.Length, ct);
+                            if (read <= 0) break;
+                            totalRead += read;
+                            overallRead += read;
+
+                            // 每秒采样
+                            var now = DateTime.UtcNow;
+                            var elapsed = (now - lastSample).TotalSeconds;
+                            if (elapsed >= 0.2)
+                            {
+                                var bitsPerSec = (read * 8.0) / elapsed;
+                                var sampleMbps = bitsPerSec / (1024.0 * 1024.0);
+                                samples.Add(sampleMbps);
+                                lastSample = now;
+                                DispatcherQueue.TryEnqueue(() => dlSpeedOverlay.Text = $"{sampleMbps:F1} Mbps");
+                                // 更新图表
+                                var cw = dlChartCanvas.Width;
+                                var ch = dlChartCanvas.Height;
+                                var maxSpeed = samples.Max();
+                                if (maxSpeed < 1) maxSpeed = 1;
+                                var linePoints = new PointCollection();
+                                var fillPoints = new PointCollection();
+                                fillPoints.Add(new Point(10, ch - 10));
+                                for (int k = 0; k < samples.Count; k++)
+                                {
+                                    var x = samples.Count > 1 ? (k / (double)(samples.Count - 1)) * (cw - 20) + 10 : 10;
+                                    var y = ch - 10 - (samples[k] / maxSpeed) * (ch - 20);
+                                    linePoints.Add(new Point(x, y));
+                                    fillPoints.Add(new Point(x, y));
+                                }
+                                fillPoints.Add(new Point(cw - 10, ch - 10));
+                                dlChartLine.Points = linePoints;
+                                dlChartFill.Points = fillPoints;
+                            }
+                            lastTotalRead = totalRead;
+                        }
+                        sw.Stop();
+                        var mbps = (totalRead * 8.0) / (1024.0 * 1024.0) / sw.Elapsed.TotalSeconds;
+                        totalDlMbps += mbps;
+                        dlCount++;
+                    }
+                    if (dlCount > 0 && !ct.IsCancellationRequested)
+                    {
+                        var avgDl = totalDlMbps / dlCount;
+                        dlVal.Text = $"{avgDl:F1} Mbps";
+                        dlVal.Foreground = avgDl > 100
+                            ? new SolidColorBrush(WColor.FromArgb(255, 0, 180, 100))
+                            : avgDl > 30
+                                ? new SolidColorBrush(WColor.FromArgb(255, 255, 140, 0))
+                                : new SolidColorBrush(WColor.FromArgb(255, 220, 50, 50));
                     }
                 }
-                catch { siteLabels[i].ip.Text = "解析失败"; }
+
+                // 上传测试
+                if (!ct.IsCancellationRequested)
+                {
+                    statusText.Text = "上传测试中...";
+                    progressBar.Value = 80;
+                    ulChartLine.Points.Clear();
+                    ulChartFill.Points.Clear();
+                    ulChartCanvas.Width = ulChartBorder.ActualWidth > 0 ? ulChartBorder.ActualWidth : 600;
+                    ulChartCanvas.Height = ulChartBorder.ActualHeight > 0 ? ulChartBorder.ActualHeight : 150;
+                    var ulSamples = new List<double>();
+                    var chunkSize = 512 * 1024;
+                    var totalUl = 10 * 1024 * 1024;
+                    var sw = Stopwatch.StartNew();
+                    long ulSent = 0;
+                    while (ulSent < totalUl && !ct.IsCancellationRequested)
+                    {
+                        var thisChunk = (int)Math.Min(chunkSize, totalUl - ulSent);
+                        var chunk = new byte[thisChunk];
+                        var content = new ByteArrayContent(chunk);
+                        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+                        var uploadResp = await client.PostAsync($"{cfBase}/__up", content, ct);
+                        if (!uploadResp.IsSuccessStatusCode) break;
+                        ulSent += thisChunk;
+                        var elapsed = sw.Elapsed.TotalSeconds;
+                        if (elapsed > 0)
+                        {
+                            var ulMbps = (ulSent * 8.0) / (1024.0 * 1024.0) / elapsed;
+                            ulSamples.Add(ulMbps);
+                            DispatcherQueue.TryEnqueue(() => ulSpeedOverlay.Text = $"{ulMbps:F1} Mbps");
+                            // 更新上传图表
+                            var ucw = ulChartCanvas.Width;
+                            var uch = ulChartCanvas.Height;
+                            var ulMax = ulSamples.Max();
+                            if (ulMax < 1) ulMax = 1;
+                            var ulLinePts = new PointCollection();
+                            var ulFillPts = new PointCollection();
+                            ulFillPts.Add(new Point(10, uch - 10));
+                            for (int k = 0; k < ulSamples.Count; k++)
+                            {
+                                var x = ulSamples.Count > 1 ? (k / (double)(ulSamples.Count - 1)) * (ucw - 20) + 10 : 10;
+                                var y = uch - 10 - (ulSamples[k] / ulMax) * (uch - 20);
+                                ulLinePts.Add(new Point(x, y));
+                                ulFillPts.Add(new Point(x, y));
+                            }
+                            ulFillPts.Add(new Point(ucw - 10, uch - 10));
+                            ulChartLine.Points = ulLinePts;
+                            ulChartFill.Points = ulFillPts;
+                        }
+                    }
+                    sw.Stop();
+                    if (ulSamples.Count > 0 && !ct.IsCancellationRequested)
+                    {
+                        var avgUl = ulSamples.Average();
+                        ulVal.Text = $"{avgUl:F1} Mbps";
+                        ulVal.Foreground = avgUl > 50
+                            ? new SolidColorBrush(WColor.FromArgb(255, 0, 180, 100))
+                            : avgUl > 10
+                                ? new SolidColorBrush(WColor.FromArgb(255, 255, 140, 0))
+                                : new SolidColorBrush(WColor.FromArgb(255, 220, 50, 50));
+                    }
+                }
+
+                if (!ct.IsCancellationRequested)
+                {
+                    progressBar.Value = 100;
+                    statusText.Text = "测试完成";
+                }
             }
-            refreshBtn.Content = "🚀 测试全部";
-            refreshBtn.IsEnabled = true;
+            catch (OperationCanceledException) { statusText.Text = "已中断"; }
+            catch { statusText.Text = "测试失败"; }
+            finally
+            {
+                progressBar.Visibility = Visibility.Collapsed;
+                startBtn.IsEnabled = true;
+                startBtn.Content = "⟳ 重新测试";
+            }
+        }
+
+        startBtn.Click += async (s, e) =>
+        {
+            speedCts?.Cancel();
+            speedCts = new CancellationTokenSource();
+            await RunSpeedTest(speedCts.Token);
         };
     }
 
@@ -885,15 +1573,40 @@ public sealed partial class MainWindow : Window
         catch { DispatcherQueue.TryEnqueue(() => label.Text = "未知"); }
     }
 
-    private TextBlock[] AddPingRows(Grid grid, (string, string, string)[] targets)
+    private class PingCardData
     {
-        var labels = new TextBlock[targets.Length];
+        public TextBlock AvgLabel { get; set; }
+        public Ellipse[] Dots { get; set; }
+    }
+
+    private PingCardData[] AddPingCards(Grid grid, (string, string, string)[] targets)
+    {
+        var cards = new PingCardData[targets.Length];
+        int cols = 4;
+        grid.ColumnDefinitions.Clear();
+        grid.RowDefinitions.Clear();
+        for (int i = 0; i < cols; i++)
+            grid.ColumnDefinitions.Add(new ColumnDefinition());
         for (int i = 0; i < targets.Length; i++)
         {
-            if (i % 3 == 0) grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var rowDef = new Grid { Margin = new Thickness(0, 4, 12, 4) };
-            rowDef.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
-            rowDef.ColumnDefinitions.Add(new ColumnDefinition());
+            if (i % cols == 0) grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            var card = new Border
+            {
+                Background = _cardBgBrush,
+                BorderBrush = _cardBorderBrush,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(12),
+                Margin = new Thickness(4, 4, 4, 4),
+                MinHeight = 90
+            };
+            var stack = new StackPanel();
+
+            // 顶行：图标 + 名称 | 平均延迟
+            var topRow = new Grid();
+            topRow.ColumnDefinitions.Add(new ColumnDefinition());
+            topRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var namePanel = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
             var iconFile = targets[i].Item3 ?? targets[i].Item2.Split('.')[0] + ".png";
             var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon", iconFile);
@@ -910,16 +1623,87 @@ public sealed partial class MainWindow : Window
                 }
                 catch { }
             }
-            namePanel.Children.Add(new TextBlock { Text = targets[i].Item1, FontSize = 13 });
-            rowDef.Children.Add(namePanel);
-            labels[i] = new TextBlock { Text = "-- ms", FontSize = 13, VerticalAlignment = VerticalAlignment.Center, Foreground = _textSecondaryBrush };
-            Grid.SetColumn(labels[i], 1);
-            rowDef.Children.Add(labels[i]);
-            Grid.SetColumn(rowDef, i % 3);
-            Grid.SetRow(rowDef, i / 3);
-            grid.Children.Add(rowDef);
+            namePanel.Children.Add(new TextBlock { Text = targets[i].Item1, FontSize = 13, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
+            topRow.Children.Add(namePanel);
+            var avgLabel = new TextBlock { Text = "-- ms", FontSize = 22, FontWeight = FontWeights.Bold, Foreground = _textPrimaryBrush, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
+            Grid.SetColumn(avgLabel, 1);
+            topRow.Children.Add(avgLabel);
+            stack.Children.Add(topRow);
+
+            // 底行：10 次圆点
+            var detailPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, Margin = new Thickness(0, 6, 0, 0) };
+            var dots = new Ellipse[10];
+            for (int j = 0; j < 10; j++)
+            {
+                dots[j] = new Ellipse
+                {
+                    Width = 10,
+                    Height = 10,
+                    Fill = new SolidColorBrush(WColor.FromArgb(255, 200, 200, 200)),
+                    Margin = new Thickness(1, 0, 1, 0)
+                };
+                detailPanel.Children.Add(dots[j]);
+            }
+            stack.Children.Add(detailPanel);
+
+            card.Child = stack;
+            Grid.SetColumn(card, i % cols);
+            Grid.SetRow(card, i / cols);
+            grid.Children.Add(card);
+            cards[i] = new PingCardData { AvgLabel = avgLabel, Dots = dots };
         }
-        return labels;
+        return cards;
+    }
+
+    private async Task RunPingTestsDetailed((string, string, string)[] targets, PingCardData[] cards, CancellationToken ct = default)
+    {
+        for (int i = 0; i < targets.Length; i++)
+        {
+            if (ct.IsCancellationRequested) return;
+            var valid = new List<int>();
+            for (int j = 0; j < 10; j++)
+            {
+                if (ct.IsCancellationRequested) return;
+                try
+                {
+                    using var ping = new System.Net.NetworkInformation.Ping();
+                    var reply = await ping.SendPingAsync(targets[i].Item2, 3000);
+                    if (reply.Status == System.Net.NetworkInformation.IPStatus.Success)
+                    {
+                        var ms = (int)reply.RoundtripTime;
+                        valid.Add(ms);
+                        cards[i].Dots[j].Fill = ms < 100
+                            ? new SolidColorBrush(WColor.FromArgb(255, 0, 180, 100))
+                            : ms < 300
+                                ? new SolidColorBrush(WColor.FromArgb(255, 255, 140, 0))
+                                : new SolidColorBrush(WColor.FromArgb(255, 220, 50, 50));
+                    }
+                    else
+                    {
+                        cards[i].Dots[j].Fill = new SolidColorBrush(WColor.FromArgb(255, 200, 50, 50));
+                    }
+                }
+                catch
+                {
+                    cards[i].Dots[j].Fill = new SolidColorBrush(WColor.FromArgb(255, 200, 50, 50));
+                }
+            }
+            if (valid.Count > 0)
+            {
+                var avg = (int)valid.Average();
+                cards[i].AvgLabel.Text = $"{avg} ms";
+                cards[i].AvgLabel.Foreground = avg < 100
+                    ? new SolidColorBrush(WColor.FromArgb(255, 0, 180, 100))
+                    : avg < 300
+                        ? new SolidColorBrush(WColor.FromArgb(255, 255, 140, 0))
+                        : new SolidColorBrush(WColor.FromArgb(255, 220, 50, 50));
+            }
+            else
+            {
+                cards[i].AvgLabel.Text = "超时";
+                cards[i].AvgLabel.Foreground = new SolidColorBrush(WColor.FromArgb(255, 200, 50, 50));
+            }
+        }
     }
 
     private async Task RunPingTests((string, string, string)[] targets, TextBlock[] labels)
@@ -1223,18 +2007,26 @@ public sealed partial class MainWindow : Window
         settingsBtn.Tapped += EditBtn_Tapped;
         Grid.SetColumn(settingsBtn, 0);
 
+        var isStoreDl = tool.Category == "工具商店" && tool.Action.StartsWith("dl:");
+        var isInstalled = isStoreDl && IsProxyToolsInstalled();
         var openBtn = new Button
         {
-            Content = "打开",
+            Content = isStoreDl ? (isInstalled ? "打开" : "安装") : "打开",
             FontSize = 13,
             HorizontalAlignment = HorizontalAlignment.Right,
             Padding = new Thickness(20, 6, 20, 6),
-            Background = new SolidColorBrush(WColor.FromArgb(255, 0, 120, 212)),
+            Background = new SolidColorBrush(isStoreDl && !isInstalled ? WColor.FromArgb(255, 0, 150, 0) : WColor.FromArgb(255, 0, 120, 212)),
             Foreground = new SolidColorBrush(WColor.FromArgb(255, 255, 255, 255)),
             BorderThickness = new Thickness(0),
             Tag = tool
         };
-        openBtn.Click += OpenBtn_Click;
+        openBtn.Click += (s, e) =>
+        {
+            if (isInstalled)
+                ShowProxyTools();
+            else
+                ExecuteToolAction(tool.Action);
+        };
         Grid.SetColumn(openBtn, 1);
 
         bottomRow.Children.Add(settingsBtn);
@@ -1247,6 +2039,11 @@ public sealed partial class MainWindow : Window
 
         card.Child = root;
         return card;
+    }
+
+    private static bool IsProxyToolsInstalled()
+    {
+        return File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ProxyTools", "mihomo", "mihomo.exe"));
     }
 
     private void FavBtn_Click(object sender, RoutedEventArgs e)
@@ -1326,6 +2123,8 @@ public sealed partial class MainWindow : Window
                 ShowMessageDialog(action.Substring(4));
             else if (action.StartsWith("cmd:"))
                 Process.Start(new ProcessStartInfo("cmd.exe", "/c " + action.Substring(4) + " & pause") { UseShellExecute = true });
+            else if (action.StartsWith("dl:"))
+                _ = DownloadAndExtractPlugin(action.Substring(3));
             else
             {
                 var path = action;
@@ -1340,7 +2139,117 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async void ShowMessageDialog(string message, string title = "提示")
+    private bool _isDownloading;
+
+    private async Task DownloadAndExtractPlugin(string pluginName)
+    {
+        if (_isDownloading) return;
+        _isDownloading = true;
+        try
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var targetDir = Path.Combine(baseDir, "ProxyTools", "mihomo");
+            if (File.Exists(Path.Combine(targetDir, "mihomo.exe")))
+            {
+                ShowMessageDialog("ProxyTools 已安装！如需重新安装，请先删除 ProxyTools 文件夹。");
+                return;
+            }
+
+            downloadStatusText.Text = "正在连接...";
+            downloadProgressBar.IsIndeterminate = true;
+            downloadFooter.Visibility = Visibility.Visible;
+
+            var rawUrl = "https://github.com/bnganblog/XKBTOOL/raw/master/plugin/ProxyTools.zip";
+            var proxyPrefix = App.DownloadProxy;
+            var urls = string.IsNullOrEmpty(proxyPrefix)
+                ? new[] { rawUrl }
+                : new[] { proxyPrefix + rawUrl, rawUrl };
+            var tempDir = Path.Combine(Path.GetTempPath(), "XKBToolbox_Plugin");
+            Directory.CreateDirectory(tempDir);
+            var zipPath = Path.Combine(tempDir, $"{pluginName}.zip");
+
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("XKBToolbox");
+                client.Timeout = TimeSpan.FromMinutes(5);
+                HttpResponseMessage response = null;
+                foreach (var url in urls)
+                {
+                    try
+                    {
+                        response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                        response.EnsureSuccessStatusCode();
+                        break;
+                    }
+                    catch
+                    {
+                        response?.Dispose();
+                        response = null;
+                    }
+                }
+                if (response == null) throw new HttpRequestException("所有下载源均不可用");
+                var total = response.Content.Headers.ContentLength ?? -1;
+                downloadProgressBar.IsIndeterminate = false;
+                downloadProgressBar.Maximum = total > 0 ? total : 100;
+                using var fs = File.Create(zipPath);
+                using var stream = await response.Content.ReadAsStreamAsync();
+                var buffer = new byte[8192];
+                long read = 0;
+                int count;
+                while ((count = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    await fs.WriteAsync(buffer, 0, count);
+                    read += count;
+                    if (total > 0)
+                    {
+                        var pct = (int)(read * 100 / total);
+                        DispatcherQueue.TryEnqueue(() =>
+                        {
+                            downloadProgressBar.Value = read;
+                            downloadStatusText.Text = $"{FormatBytes(read)} / {FormatBytes(total)} ({pct}%)";
+                        });
+                    }
+                    else
+                    {
+                        DispatcherQueue.TryEnqueue(() => downloadStatusText.Text = $"已下载 {FormatBytes(read)}");
+                    }
+                }
+            }
+
+            downloadStatusText.Text = "正在解压...";
+            downloadProgressBar.IsIndeterminate = true;
+            System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, baseDir, overwriteFiles: true);
+
+            try { File.Delete(zipPath); } catch { }
+
+            downloadFooter.Visibility = Visibility.Collapsed;
+            ShowMessageDialog("ProxyTools 安装成功！请重启应用或等待几秒，左侧导航栏将出现「代理工具」。");
+            UpdateProxyNavItem();
+        }
+        catch (HttpRequestException)
+        {
+            downloadFooter.Visibility = Visibility.Collapsed;
+            ShowMessageDialog("安装失败：无法下载插件，请检查网络连接或稍后重试。");
+        }
+        catch (Exception ex)
+        {
+            downloadFooter.Visibility = Visibility.Collapsed;
+            ShowMessageDialog($"安装失败: {ex.Message}");
+        }
+        finally
+        {
+            _isDownloading = false;
+        }
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024.0):F1} MB";
+    }
+
+    internal async void ShowMessageDialog(string message, string title = "提示")
     {
         var dlg = new ContentDialog
         {
@@ -1504,10 +2413,27 @@ public sealed partial class MainWindow : Window
 
     private void BackBtn_Click(object sender, RoutedEventArgs e)
     {
-        // 返回到系统信息页面
-        navView.SelectedItem = navSystem;
-        LoadContent("system");
-        backBtn.Visibility = Visibility.Collapsed;
+        if (_navHistory.Count > 0)
+        {
+            var prevTag = _navHistory.Pop();
+            if (prevTag == _currentTag && _navHistory.Count > 0)
+                prevTag = _navHistory.Pop();
+            _suppressNavHistory = true;
+            if (prevTag == "settings")
+            {
+                navView.SelectedItem = null;
+            }
+            else
+            {
+                foreach (var item in navView.MenuItems)
+                {
+                    if (item is NavigationViewItem nvi && nvi.Tag?.ToString() == prevTag)
+                    { navView.SelectedItem = nvi; break; }
+                }
+            }
+            LoadContent(prevTag);
+            _suppressNavHistory = false;
+        }
     }
 
     #endregion
@@ -1516,6 +2442,8 @@ public sealed partial class MainWindow : Window
 
     private void SettingsBtn_Click(object sender, RoutedEventArgs e)
     {
+        PushNavHistory(_currentTag);
+        _currentTag = "settings";
         navView.SelectedItem = null;
         navView.Header = "设置";
         contentArea.Children.Clear();
@@ -1560,17 +2488,36 @@ public sealed partial class MainWindow : Window
         chartGrid.ColumnDefinitions.Add(new ColumnDefinition());
         chartGrid.ColumnDefinitions.Add(new ColumnDefinition());
 
-        var cpuChart = new UsageChart("CPU", WColor.FromArgb(255, 0, 120, 212));
-        Grid.SetColumn(cpuChart, 0);
-        var memChart = new UsageChart("内存", WColor.FromArgb(255, 16, 137, 62));
-        Grid.SetColumn(memChart, 1);
-        var gpuChart = new UsageChart("GPU", WColor.FromArgb(255, 196, 43, 28));
-        Grid.SetColumn(gpuChart, 2);
+        bool barMode = App.SysInfoStyle == "Bar";
+        object cpuChart, memChart, gpuChart;
 
-        chartGrid.Children.Add(cpuChart);
-        chartGrid.Children.Add(memChart);
-        chartGrid.Children.Add(gpuChart);
-        chartCard.Child = chartGrid;
+        if (barMode)
+        {
+            var cpuBar = new HorizontalBarChart("CPU", WColor.FromArgb(255, 0, 120, 212));
+            var memBar = new HorizontalBarChart("内存", WColor.FromArgb(255, 16, 137, 62));
+            var gpuBar = new HorizontalBarChart("GPU", WColor.FromArgb(255, 196, 43, 28));
+            var barStack = new StackPanel();
+            barStack.Children.Add(cpuBar);
+            barStack.Children.Add(memBar);
+            barStack.Children.Add(gpuBar);
+            chartCard.Child = barStack;
+            cpuChart = cpuBar; memChart = memBar; gpuChart = gpuBar;
+        }
+        else
+        {
+            var cpuCirc = new UsageChart("CPU", WColor.FromArgb(255, 0, 120, 212));
+            Grid.SetColumn(cpuCirc, 0);
+            var memCirc = new UsageChart("内存", WColor.FromArgb(255, 16, 137, 62));
+            Grid.SetColumn(memCirc, 1);
+            var gpuCirc = new UsageChart("GPU", WColor.FromArgb(255, 196, 43, 28));
+            Grid.SetColumn(gpuCirc, 2);
+            chartGrid.Children.Add(cpuCirc);
+            chartGrid.Children.Add(memCirc);
+            chartGrid.Children.Add(gpuCirc);
+            chartCard.Child = chartGrid;
+            cpuChart = cpuCirc; memChart = memCirc; gpuChart = gpuCirc;
+        }
+
         stackPanel.Children.Add(chartCard);
 
         stackPanel.Children.Add(CreateInfoCard("硬盘信息", new[] { CreateInfoRow("硬盘", _diskInfo), CreateInfoRow("型号", _diskModel) }));
@@ -1581,7 +2528,7 @@ public sealed partial class MainWindow : Window
         StartChartTimer(cpuChart, memChart, gpuChart);
     }
 
-    private void StartChartTimer(UsageChart cpuChart, UsageChart memChart, UsageChart gpuChart)
+    private void StartChartTimer(object cpuChart, object memChart, object gpuChart)
     {
         _chartTimer?.Stop();
 
@@ -1599,13 +2546,19 @@ public sealed partial class MainWindow : Window
         }
         catch { }
 
+        static void AddVal(object chart, float val)
+        {
+            if (chart is UsageChart uc) uc.AddValue(val);
+            else if (chart is HorizontalBarChart hb) hb.AddValue(val);
+        }
+
         _chartTimer = DispatcherQueue.CreateTimer();
         _chartTimer.Interval = TimeSpan.FromSeconds(1);
         _chartTimer.Tick += (s, e) =>
         {
             try
             {
-                cpuChart.AddValue(_cpuCounter?.NextValue() ?? 0);
+                AddVal(cpuChart, _cpuCounter?.NextValue() ?? 0);
                 float memVal = 0;
                 try
                 {
@@ -1618,7 +2571,7 @@ public sealed partial class MainWindow : Window
                     }
                 }
                 catch { }
-                memChart.AddValue(memVal);
+                AddVal(memChart, memVal);
 
                 float gpuVal = 0;
                 try
@@ -1641,7 +2594,7 @@ public sealed partial class MainWindow : Window
                     }
                 }
                 catch { }
-                gpuChart.AddValue(gpuVal);
+                AddVal(gpuChart, gpuVal);
             }
             catch { }
         };
@@ -1878,9 +2831,10 @@ public sealed partial class MainWindow : Window
     {
         try
         {
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            _appHwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             _wndProcDelegate = WndProc;
-            _oldWndProc = SetWindowLongPtr(hwnd, GWLP_WNDPROC, Marshal.GetFunctionPointerForDelegate(_wndProcDelegate));
+            _oldWndProc = SetWindowLongPtr(_appHwnd, GWLP_WNDPROC, Marshal.GetFunctionPointerForDelegate(_wndProcDelegate));
+            CreateTrayIcon();
         }
         catch { }
     }
@@ -1888,14 +2842,116 @@ public sealed partial class MainWindow : Window
     private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
     {
         if (msg == WM_NCLBUTTONDBLCLK && (int)wParam == HTCAPTION)
-            return IntPtr.Zero; // 禁止双击标题栏最大化
+            return IntPtr.Zero;
+        if (msg == WM_TRAYICON)
+        {
+            var lw = (int)lParam;
+            if (lw == 0x0203) // WM_LBUTTONDBLCLK
+            {
+                ShowFromTray();
+            }
+            else if (lw == 0x0205) // WM_RBUTTONUP
+            {
+                ShowTrayMenu();
+            }
+        }
+        if (msg == WM_CLOSE && _trayIconAdded)
+        {
+            MinimizeToTray();
+            return IntPtr.Zero;
+        }
+        if (msg == 0x0111) // WM_COMMAND
+        {
+            var cmd = (uint)wParam & 0xFFFF;
+            if (cmd == TRAY_SHOW) ShowFromTray();
+            else if (cmd == TRAY_EXIT)
+            {
+                _trayIconAdded = false;
+                DestroyTrayIcon();
+                Application.Current.Exit();
+            }
+        }
         try { return CallWindowProc(_oldWndProc, hWnd, msg, wParam, lParam); }
         catch { return IntPtr.Zero; }
     }
 
+    private void CreateTrayIcon()
+    {
+        try
+        {
+            var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon", "app.ico");
+            IntPtr hIcon;
+            if (File.Exists(iconPath))
+                hIcon = LoadImage(IntPtr.Zero, iconPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+            else
+                hIcon = LoadImage(IntPtr.Zero, "app.ico", IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+            if (hIcon == IntPtr.Zero)
+                hIcon = LoadImage(IntPtr.Zero, "ToolboxWinUI.exe", IMAGE_ICON, 32, 32, 0);
+
+            _trayData = new NOTIFYICONDATA
+            {
+                cbSize = Marshal.SizeOf<NOTIFYICONDATA>(),
+                hWnd = _appHwnd,
+                uID = 0,
+                uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_SHOWTIP,
+                uCallbackMessage = WM_TRAYICON,
+                hIcon = hIcon,
+                szTip = "显卡吧工具箱WinUI3"
+            };
+            _trayIconAdded = Shell_NotifyIcon(NIM_ADD, ref _trayData);
+        }
+        catch { }
+    }
+
+    private void DestroyTrayIcon()
+    {
+        if (_trayIconAdded)
+        {
+            _trayData.uFlags = 0;
+            Shell_NotifyIcon(NIM_DELETE, ref _trayData);
+            _trayIconAdded = false;
+        }
+    }
+
+    private void MinimizeToTray()
+    {
+        ShowWindow(_appHwnd, SW_HIDE);
+    }
+
+    private void ShowFromTray()
+    {
+        ShowWindow(_appHwnd, SW_SHOW);
+        SetForegroundWindow(_appHwnd);
+    }
+
+    private void ShowTrayMenu()
+    {
+        try
+        {
+            var hMenu = CreatePopupMenu();
+            InsertMenu(hMenu, 0, MF_STRING, TRAY_SHOW, "显示主窗口");
+            InsertMenu(hMenu, 1, MF_SEPARATOR, 0, null);
+            InsertMenu(hMenu, 2, MF_STRING, TRAY_EXIT, "退出");
+
+            if (!GetCursorPos(out var pt)) return;
+
+            SetForegroundWindow(_appHwnd);
+            TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_BOTTOMALIGN, pt.X, pt.Y, 0, _appHwnd, IntPtr.Zero);
+            DestroyMenu(hMenu);
+        }
+        catch { }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT { public int X; public int Y; }
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out POINT lpPoint);
+
     internal List<ToolInfo> GetTools() => _allTools;
     internal void SetTools(List<ToolInfo> tools) { _allTools = tools; SaveTools(); }
     internal void ResetTools() { InitDefaultTools(); }
+    internal void InvalidateSysInfoCache() { _systemInfoCache = null; }
     internal void RefreshCurrentPage() { LoadContent(GetCurrentTag()); }
     internal XamlRoot GetContentXamlRoot() => contentArea.XamlRoot;
 

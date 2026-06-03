@@ -27,8 +27,18 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="icon\**\*" CopyToOutputDirectory="PreserveNewest" />
-        <Content Include="tools\**\*" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="app.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+        <Content Include="icon\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+        <Content Include="tools\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="..\ProxyTools\*.cs" Link="ProxyTools\%(FileName)%(Extension)" />
+    </ItemGroup>
+
+    <!-- 排除 AcceleratorHelper 独立项目文件 -->
+    <ItemGroup>
+        <Compile Remove="AcceleratorHelper\**" />
     </ItemGroup>
 
     <ItemGroup>

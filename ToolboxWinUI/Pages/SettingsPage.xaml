@@ -6,15 +6,84 @@
         <StackPanel Margin="0,0,0,24">
 
             <!-- 关于 -->
+            <TextBlock Text="关于" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,0,0,4"/>
+
             <Border x:Name="aboutCard"
                     BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,12">
                 <StackPanel>
-                    <TextBlock Text="关于" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <TextBlock Text="显卡吧工具箱WinUI3" FontSize="22" FontWeight="Bold" Foreground="{ThemeResource SystemAccentColor}"/>
                     <TextBlock x:Name="verText" FontSize="13" Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}" Margin="0,4,0,0"/>
-                    <TextBlock Text="Windows 硬件检测与系统工具" FontSize="13" Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}" Margin="0,4,0,0"/>
+                    <TextBlock TextWrapping="Wrap" Margin="0,8,0,0">
+                        <Run FontSize="14" FontWeight="SemiBold">概述&#x0a;</Run>
+                        <Run FontSize="13">显卡吧工具箱是一款面向 PC 硬件爱好者与 DIY 玩家的 Windows 桌面工具集，将各类硬件检测、性能测试、系统优化工具整合到统一的现代化界面中，开箱即用。</Run>
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Margin="0,12,0,0" FontSize="14" FontWeight="SemiBold">特性</TextBlock>
+                    <TextBlock FontSize="13" Margin="16,4,0,0" TextWrapping="Wrap">&#x2022; 智能工具管理 — 自动扫描 tools/ 目录，以卡片网格展示，支持收藏、打开</TextBlock>
+                    <TextBlock FontSize="13" Margin="16,2,0,0" TextWrapping="Wrap">&#x2022; 硬件监控 — CPU、内存、GPU、硬盘型号实时检测，含环形用量图表</TextBlock>
+                    <TextBlock FontSize="13" Margin="16,2,0,0" TextWrapping="Wrap">&#x2022; 网络诊断 — IP 地址多源查询、分流测试（DNS 定位 + Ping）</TextBlock>
+                    <TextBlock FontSize="13" Margin="16,2,0,0" TextWrapping="Wrap">&#x2022; 毛玻璃主题 — 浅色/深色亚克力毛玻璃效果，支持实时切换</TextBlock>
+                    <TextBlock FontSize="13" Margin="16,2,0,0" TextWrapping="Wrap">&#x2022; 动态目录同步 — 每次启动自动扫描，新增删除即时生效</TextBlock>
+                    <TextBlock TextWrapping="Wrap" Margin="0,12,0,0">
+                        <Run FontSize="14" FontWeight="SemiBold">技术栈&#x0a;</Run>
+                        <Run FontSize="13">WinUI 3 + Windows App SDK 1.x | .NET 10 | C# 14 | WMI + PerformanceCounter | 纯自绘 PathGeometry 图表</Run>
+                    </TextBlock>
                 </StackPanel>
             </Border>
+
+            <!-- 更新 -->
+            <TextBlock Text="更新" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,12,0,4"/>
+
+            <Border x:Name="updateCard"
+                    BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                        <Border Width="44" Height="44" CornerRadius="8" Background="{ThemeResource SystemControlBackgroundBaseLowBrush}">
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE895;" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="检查更新" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="updateStatusText" Text="点击检查新版本" FontSize="12" Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <Button x:Name="checkUpdateBtn" Grid.Column="2" Content="检查" MinWidth="80" Height="32" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- 下载代理 -->
+            <Border x:Name="proxyCard"
+                    BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,12">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                            <Border Width="44" Height="44" CornerRadius="8" Background="{ThemeResource SystemControlBackgroundBaseLowBrush}">
+                                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE71B;" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="下载代理" FontSize="18" FontWeight="SemiBold"/>
+                                <TextBlock Text="GitHub 资源加速下载" FontSize="12" Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                    <Border Height="1" Background="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,16,0,8" Opacity="0.3"/>
+                    <TextBox x:Name="proxyUrlBox" PlaceholderText="留空则直连 GitHub" Margin="0,0,0,8"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="saveProxyBtn" Content="保存" MinWidth="80"/>
+                        <Button x:Name="resetProxyBtn" Content="恢复默认" MinWidth="80" Style="{ThemeResource DefaultButtonStyle}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 外观 -->
+            <TextBlock Text="外观" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,12,0,4"/>
 
             <!-- 主题 -->
             <Border x:Name="themeCard"
@@ -41,16 +110,62 @@
                 </Grid>
             </Border>
 
+            <!-- 占用图表样式 -->
+            <Border x:Name="chartStyleCard"
+                    BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                        <Border Width="44" Height="44" CornerRadius="8" Background="{ThemeResource SystemControlBackgroundBaseLowBrush}">
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xEDE3;" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="占用图表样式" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock Text="切换硬件占用展示方式" FontSize="12" Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <ComboBox x:Name="sysInfoStyleCombo" Grid.Column="1" SelectedIndex="0" HorizontalAlignment="Right" MinWidth="140" VerticalAlignment="Center">
+                        <ComboBoxItem Content="圆形图"/>
+                        <ComboBoxItem Content="横向进度条"/>
+                    </ComboBox>
+                </Grid>
+            </Border>
+
+            <!-- 配置管理 -->
+            <TextBlock Text="配置管理" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource SystemAccentColor}" Margin="0,12,0,4"/>
+
             <!-- 工具管理 -->
             <Border x:Name="toolsCard"
                     BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,12">
                 <StackPanel>
-                    <TextBlock Text="工具管理" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                    <Button x:Name="resetBtn" Content="恢复默认工具" HorizontalAlignment="Left" Margin="0,0,0,8" Padding="16,6"/>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button x:Name="exportBtn" Content="导出工具配置" Padding="16,6"/>
-                        <Button x:Name="importBtn" Content="导入工具配置" Padding="16,6"/>
-                    </StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                            <Border Width="44" Height="44" CornerRadius="8" Background="{ThemeResource SystemControlBackgroundBaseLowBrush}">
+                                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8A5;" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="工具管理" FontSize="18" FontWeight="SemiBold"/>
+                                <TextBlock Text="管理工具配置" FontSize="12" Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                    <Border Height="1" Background="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,16,0,8" Opacity="0.3"/>
+                    <Button x:Name="resetBtn" Content="恢复默认工具" HorizontalAlignment="Stretch" Margin="0,0,0,8" Padding="16,8" Height="40"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="exportBtn" Grid.Column="0" Content="导出工具配置" HorizontalAlignment="Stretch" Padding="16,8" Height="40" Margin="0,0,4,0"/>
+                        <Button x:Name="importBtn" Grid.Column="1" Content="导入工具配置" HorizontalAlignment="Stretch" Padding="16,8" Height="40" Margin="4,0,0,0"/>
+                    </Grid>
                 </StackPanel>
             </Border>
 
