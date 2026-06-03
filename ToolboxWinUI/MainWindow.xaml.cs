@@ -2027,13 +2027,18 @@ public sealed partial class MainWindow : Window
             iconElement = LoadSvgIcon(iconPath, 36);
         }
         else if (!string.IsNullOrEmpty(tool.Icon) && (tool.Icon.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                                                        tool.Icon.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) ||
-                                                        tool.Icon.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                                                        tool.Icon.Contains(@"\") || tool.Icon.Contains("/")))
+                                                         tool.Icon.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) ||
+                                                         tool.Icon.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                                                         tool.Icon.Contains(@"\") || tool.Icon.Contains("/")))
         {
             var iconPath = tool.Icon;
             if (!Path.IsPathRooted(iconPath))
-                iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, iconPath);
+            {
+                var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                var candidate1 = Path.Combine(baseDir, iconPath);
+                var candidate2 = Path.Combine(baseDir, "..", "..", "..", "plugin", "icon", Path.GetFileName(iconPath));
+                iconPath = File.Exists(candidate1) ? candidate1 : (File.Exists(candidate2) ? candidate2 : candidate1);
+            }
             var img = new Image { Width = 36, Height = 36, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Top };
             try
             {
