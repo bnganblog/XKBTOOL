@@ -75,6 +75,35 @@ public class HostsManager
         }
     }
 
+    public void AddGitHubHosts(List<(string Ip, string Domain)> entries)
+    {
+        try
+        {
+            var lines = File.ReadAllLines(HostsPath).ToList();
+            RemoveOurEntries(lines);
+
+            lines.Add("");
+            lines.Add(MarkerBegin);
+            lines.Add("# Github Hosts Start");
+            lines.Add("# Project Address: https://github.com/maxiaof/github-hosts");
+            foreach (var (ip, domain) in entries)
+            {
+                lines.Add($"{ip} {domain}");
+            }
+            lines.Add("# Github Hosts End");
+            lines.Add(MarkerEnd);
+            lines.Add("");
+
+            File.WriteAllLines(HostsPath, lines);
+            _logger.LogInformation("已添加 {Count} 条 GitHub Hosts 条目", entries.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "添加 GitHub Hosts 条目失败");
+            throw;
+        }
+    }
+
     public void RemoveEntries()
     {
         try

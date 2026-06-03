@@ -77,8 +77,35 @@ public class AcceleratorService
         AddLog("INFO", $"DNS 解析完成: {dnsResults.Count} 个域名");
 
         _hostsManager.BackupHosts();
-        _hostsManager.AddEntries(_domains);
-        AddLog("INFO", $"已添加 {_domains.Length} 条 hosts 条目");
+
+        var nonGitHubDomains = _domains.Where(d => !d.Contains("github")).ToArray();
+        _hostsManager.AddEntries(nonGitHubDomains);
+        AddLog("INFO", $"已添加 {nonGitHubDomains.Length} 条代理 hosts 条目");
+
+        var githubDomains = _domains.Where(d => d.Contains("github")).ToArray();
+        if (githubDomains.Length > 0)
+        {
+            try
+            {
+                AddLog("INFO", "正在获取 GitHub Hosts...");
+                var ghEntries = await FetchGitHubHostsAsync();
+                if (ghEntries.Count > 0)
+                {
+                    _hostsManager.AddGitHubHosts(ghEntries);
+                    AddLog("INFO", $"已添加 {ghEntries.Count} 条 GitHub Hosts");
+                }
+                else
+                {
+                    _hostsManager.AddEntries(githubDomains);
+                    AddLog("WARN", "获取 GitHub Hosts 失败，使用代理模式");
+                }
+            }
+            catch
+            {
+                _hostsManager.AddEntries(githubDomains);
+                AddLog("WARN", "获取 GitHub Hosts 异常，使用代理模式");
+            }
+        }
 
         _host = CreateHost();
         await _host.StartAsync();
@@ -168,6 +195,34 @@ public class AcceleratorService
                 _logs.RemoveAt(0);
         }
         _logger.LogInformation("[{Level}] {Message}", level, message);
+    }
+
+    private static async Task<List<(string Ip, string Domain)>> FetchGitHubHostsAsync()
+    {
+        var entries = new List<(string Ip, string Domain)>();
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+        var urls = new[]
+        {
+            "https://raw.githubusercontent.com/maxiaof/github-hosts/master/hosts",
+            "https://ghfast.top/https://raw.githubusercontent.com/maxiaof/github-hosts/master/hosts"
+        };
+        string? text = null;
+        foreach (var url in urls)
+        {
+            try { text = await client.GetStringAsync(url); break; }
+            catch { }
+        }
+        if (text == null) return entries;
+
+        foreach (var line in text.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.StartsWith("#") || string.IsNullOrEmpty(trimmed)) continue;
+            var parts = trimmed.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 2 && System.Net.IPAddress.TryParse(parts[0], out _))
+                entries.Add((parts[0], parts[1]));
+        }
+        return entries;
     }
 
     private static int GetAvailablePort(int preferredPort)
