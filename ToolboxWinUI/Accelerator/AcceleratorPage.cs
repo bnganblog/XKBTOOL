@@ -30,10 +30,10 @@ public class AcceleratorPage : Grid
     private readonly SolidColorBrush _accentBrush = new(Color.FromArgb(255, 0, 120, 212));
     private readonly SolidColorBrush _greenBrush = new(Color.FromArgb(255, 0, 165, 0));
     private readonly SolidColorBrush _redBrush = new(Color.FromArgb(255, 232, 17, 35));
-    private readonly SolidColorBrush _textPrimaryBrush = new(Color.FromArgb(255, 30, 30, 30));
-    private readonly SolidColorBrush _textSecondaryBrush = new(Color.FromArgb(255, 100, 100, 100));
-    private readonly SolidColorBrush _cardBgBrush = new(Color.FromArgb(255, 255, 255, 255));
-    private readonly SolidColorBrush _cardBorderBrush = new(Color.FromArgb(255, 220, 220, 220));
+    private SolidColorBrush _textPrimaryBrush = new(Color.FromArgb(255, 30, 30, 30));
+    private SolidColorBrush _textSecondaryBrush = new(Color.FromArgb(255, 100, 100, 100));
+    private SolidColorBrush _cardBgBrush = new(Color.FromArgb(255, 255, 255, 255));
+    private SolidColorBrush _cardBorderBrush = new(Color.FromArgb(255, 220, 220, 220));
 
     private static readonly string HelperPath = System.IO.Path.Combine(
         AppDomain.CurrentDomain.BaseDirectory, "AcceleratorHelper", "AcceleratorHelper.exe");
@@ -43,7 +43,15 @@ public class AcceleratorPage : Grid
         _mainWindow = mainWindow;
         _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
         Margin = new Thickness(24);
+        ApplyTheme();
         BuildUI();
+        App.ThemeChanged += () => DispatcherQueue.TryEnqueue(() =>
+        {
+            ApplyTheme();
+            Children.Clear();
+            BuildUI();
+            _statusTimer?.Start();
+        });
     }
 
     private void BuildUI()
@@ -256,6 +264,36 @@ public class AcceleratorPage : Grid
                 _statusText.Text = "运行中 ●";
                 _statusText.Foreground = new SolidColorBrush(Colors.Green);
             }
+        }
+    }
+
+    private void ApplyTheme()
+    {
+        bool glass = App.CurrentTheme == "DarkGlass" || App.CurrentTheme == "LightGlass";
+        bool darkGlass = App.CurrentTheme == "DarkGlass";
+        bool dark = App.CurrentTheme == "Dark";
+
+        if (darkGlass || dark)
+        {
+            _textPrimaryBrush = new SolidColorBrush(Color.FromArgb(255, 224, 224, 224));
+            _textSecondaryBrush = new SolidColorBrush(Color.FromArgb(255, 156, 156, 156));
+            _cardBgBrush = glass
+                ? new SolidColorBrush(Color.FromArgb(160, 30, 30, 30))
+                : new SolidColorBrush(Color.FromArgb(255, 30, 30, 30));
+            _cardBorderBrush = glass
+                ? new SolidColorBrush(Color.FromArgb(0, 0, 0, 0))
+                : new SolidColorBrush(Color.FromArgb(255, 60, 60, 60));
+        }
+        else
+        {
+            _textPrimaryBrush = new SolidColorBrush(Color.FromArgb(255, 30, 30, 30));
+            _textSecondaryBrush = new SolidColorBrush(Color.FromArgb(255, 100, 100, 100));
+            _cardBgBrush = glass
+                ? new SolidColorBrush(Color.FromArgb(100, 248, 248, 248))
+                : new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
+            _cardBorderBrush = glass
+                ? new SolidColorBrush(Color.FromArgb(60, 150, 150, 150))
+                : new SolidColorBrush(Color.FromArgb(255, 220, 220, 220));
         }
     }
 
