@@ -29,3 +29,6 @@ Desktop.ini
 tools.zip
 *.7z
 *.rar
+
+## Publish
+publish/
