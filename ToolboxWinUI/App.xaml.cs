@@ -5,6 +5,7 @@ namespace ToolboxWinUI;
 
 public partial class App : Application
 {
+    private static readonly Mutex _singleInstanceMutex = new(true, @"Global\XKBToolbox_SingleInstance");
     private static readonly string SettingsFile = System.IO.Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "ToolboxWinUI", "settings.json");
@@ -17,6 +18,11 @@ public partial class App : Application
     public App()
     {
         InitializeComponent();
+        if (!_singleInstanceMutex.WaitOne(TimeSpan.Zero, false))
+        {
+            _singleInstanceMutex.Dispose();
+            Environment.Exit(0);
+        }
     }
 
     protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs e)
