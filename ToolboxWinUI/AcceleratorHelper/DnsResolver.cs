@@ -14,7 +14,8 @@ public class DnsResolver
     {
         ["阿里"] = "https://dns.alidns.com/resolve",
         ["Cloudflare"] = "https://cloudflare-dns.com/resolve",
-        ["又拍云"] = "https://doh.pub/resolve"
+        ["又拍云"] = "https://doh.pub/resolve",
+        ["Google"] = "https://dns.google/resolve"
     };
 
     private readonly Dictionary<string, (IPAddress Ip, long Ms, string Server)> _cache = new();
