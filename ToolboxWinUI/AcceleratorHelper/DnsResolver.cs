@@ -18,16 +18,6 @@ public class DnsResolver
         ["Google"] = "https://dns.google/resolve"
     };
 
-    private static readonly Dictionary<string, string> PresetHosts = new()
-    {
-        ["i.scdn.co"] = "117.18.232.151",
-        ["p.scdn.co"] = "117.18.232.151",
-        ["r.scdn.co"] = "117.18.232.151",
-        ["t.scdn.co"] = "117.18.232.151",
-        ["u.scdn.co"] = "117.18.232.151",
-        ["audio-ec.spotify.com"] = "117.18.232.151",
-    };
-
     private readonly Dictionary<string, (IPAddress Ip, long Ms, string Server)> _cache = new();
     private readonly object _cacheLock = new();
 
@@ -46,14 +36,6 @@ public class DnsResolver
                     domain, cached.Ip, cached.Ms, cached.Server);
                 return cached.Ip;
             }
-        }
-
-        if (PresetHosts.TryGetValue(domain, out var presetIp))
-        {
-            var ip = IPAddress.Parse(presetIp);
-            lock (_cacheLock) { _cache[domain] = (ip, 0, "预设Hosts"); }
-            _logger.LogInformation("DNS 预设Hosts: {Domain} → {Ip}", domain, ip);
-            return ip;
         }
 
         var results = new List<(IPAddress Ip, long Ms, string Server)>();
