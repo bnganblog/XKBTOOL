@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net.Http;
+using System.Net.NetworkInformation;
 using System.Text.Json;
 using Microsoft.UI;
 using Microsoft.UI.Text;
@@ -22,10 +23,23 @@ public class AcceleratorPage : Grid
     private CheckBox _cbSteam = null!;
     private CheckBox _cbSpotify = null!;
     private CheckBox _cbCloudflare = null!;
+    private TextBlock _latencyGitHub = null!;
+    private TextBlock _latencySteam = null!;
+    private TextBlock _latencySpotify = null!;
+    private TextBlock _latencyCloudflare = null!;
     private Button _startBtn = null!;
     private Button _stopBtn = null!;
+    private Button _testBtn = null!;
     private TextBlock _statusText = null!;
     private TextBlock _logText = null!;
+
+    private static readonly Dictionary<string, string> ServiceUrls = new()
+    {
+        ["GitHub"] = "github.com",
+        ["Steam"] = "store.steampowered.com",
+        ["Spotify"] = "open.spotify.com",
+        ["Cloudflare"] = "cloudflare.com"
+    };
 
     private readonly SolidColorBrush _accentBrush = new(Color.FromArgb(255, 0, 120, 212));
     private readonly SolidColorBrush _greenBrush = new(Color.FromArgb(255, 0, 165, 0));
@@ -77,24 +91,25 @@ public class AcceleratorPage : Grid
             Foreground = _textPrimaryBrush,
             Margin = new Thickness(0, 0, 0, 12)
         });
-        _cbGitHub = new CheckBox { Content = "GitHub", IsChecked = true };
-        _cbSteam = new CheckBox { Content = "Steam", IsChecked = true };
-        _cbSpotify = new CheckBox { Content = "Spotify" };
-        _cbCloudflare = new CheckBox { Content = "Cloudflare" };
-        servicePanel.Children.Add(_cbGitHub);
-        servicePanel.Children.Add(_cbSteam);
-        servicePanel.Children.Add(_cbSpotify);
-        servicePanel.Children.Add(_cbCloudflare);
+
+        _cbGitHub = CreateServiceRow(servicePanel, "GitHub");
+        _cbSteam = CreateServiceRow(servicePanel, "Steam");
+        _cbSpotify = CreateServiceRow(servicePanel, "Spotify");
+        _cbCloudflare = CreateServiceRow(servicePanel, "Cloudflare");
+
         stack.Children.Add(servicePanel);
 
         // 控制
         var controlPanel = CreateCard();
         var btns = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
+        _testBtn = CreateButton("测试连通性", _accentBrush, Colors.White);
+        _testBtn.Click += TestBtn_Click;
         _startBtn = CreateButton("启动加速", _greenBrush, Colors.White);
         _startBtn.Click += StartBtn_Click;
         _stopBtn = CreateButton("停止加速", _redBrush, Colors.White);
         _stopBtn.Click += StopBtn_Click;
         _stopBtn.IsEnabled = false;
+        btns.Children.Add(_testBtn);
         btns.Children.Add(_startBtn);
         btns.Children.Add(_stopBtn);
         controlPanel.Children.Add(btns);
@@ -295,6 +310,99 @@ public class AcceleratorPage : Grid
                 ? new SolidColorBrush(Color.FromArgb(60, 150, 150, 150))
                 : new SolidColorBrush(Color.FromArgb(255, 220, 220, 220));
         }
+    }
+
+    private CheckBox CreateServiceRow(StackPanel parent, string name)
+    {
+        var row = new Grid { Margin = new Thickness(0, 2, 0, 2) };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var cb = new CheckBox { Content = name, IsChecked = true };
+        row.Children.Add(cb);
+
+        var latency = new TextBlock
+        {
+            Text = "-- ms",
+            FontSize = 12,
+            Foreground = _textSecondaryBrush,
+            VerticalAlignment = VerticalAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(8, 0, 0, 0)
+        };
+        Grid.SetColumn(latency, 2);
+        row.Children.Add(latency);
+
+        switch (name)
+        {
+            case "GitHub": _latencyGitHub = latency; break;
+            case "Steam": _latencySteam = latency; break;
+            case "Spotify": _latencySpotify = latency; break;
+            case "Cloudflare": _latencyCloudflare = latency; break;
+        }
+
+        parent.Children.Add(row);
+        return cb;
+    }
+
+    private async void TestBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _testBtn.IsEnabled = false;
+        await TestAllConnectivityAsync();
+        _testBtn.IsEnabled = true;
+    }
+
+    private async Task TestAllConnectivityAsync()
+    {
+        var tasks = new List<Task>();
+        if (_cbGitHub.IsChecked == true)
+            tasks.Add(TestConnectivityAsync("GitHub", "github.com", _latencyGitHub));
+        else
+            _latencyGitHub.Text = "-- ms";
+        if (_cbSteam.IsChecked == true)
+            tasks.Add(TestConnectivityAsync("Steam", "store.steampowered.com", _latencySteam));
+        else
+            _latencySteam.Text = "-- ms";
+        if (_cbSpotify.IsChecked == true)
+            tasks.Add(TestConnectivityAsync("Spotify", "open.spotify.com", _latencySpotify));
+        else
+            _latencySpotify.Text = "-- ms";
+        if (_cbCloudflare.IsChecked == true)
+            tasks.Add(TestConnectivityAsync("Cloudflare", "cloudflare.com", _latencyCloudflare));
+        else
+            _latencyCloudflare.Text = "-- ms";
+        await Task.WhenAll(tasks);
+    }
+
+    private async Task TestConnectivityAsync(string name, string host, TextBlock label)
+    {
+        var latencyText = "-- ms";
+        try
+        {
+            using var ping = new Ping();
+            var reply = await ping.SendPingAsync(host, 3000);
+            if (reply.Status == IPStatus.Success)
+                latencyText = $"{reply.RoundtripTime} ms";
+            else
+                latencyText = "超时";
+        }
+        catch { latencyText = "失败"; }
+
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            label.Text = latencyText;
+            if (latencyText.EndsWith("ms") && int.TryParse(latencyText.Replace(" ms", ""), out var t))
+            {
+                if (t < 100) label.Foreground = new SolidColorBrush(Colors.Green);
+                else if (t < 300) label.Foreground = new SolidColorBrush(Colors.Orange);
+                else label.Foreground = new SolidColorBrush(Colors.Red);
+            }
+            else
+            {
+                label.Foreground = new SolidColorBrush(Colors.Red);
+            }
+        });
     }
 
     private void ShowMessage(string message)
