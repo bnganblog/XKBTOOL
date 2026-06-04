@@ -1,0 +1,1 @@
+import{_ as s,o as t,c as d,a0 as e}from"./chunks/framework.Dx25mwie.js";const p=JSON.parse('{"title":"下载","description":"","frontmatter":{},"headers":[],"relativePath":"download.md","filePath":"download.md"}'),i={name:"download.md"};function l(o,a,n,r,c,h){return t(),d("div",null,[...a[0]||(a[0]=[e("",15)])])}const b=s(i,[["render",l]]);export{p as __pageData,b as default};

@@ -1,0 +1,1 @@
+import{_ as l,o,c as a,a0 as i}from"./chunks/framework.Dx25mwie.js";const u=JSON.parse('{"title":"更新日志","description":"","frontmatter":{},"headers":[],"relativePath":"changelog.md","filePath":"changelog.md"}'),r={name:"changelog.md"};function n(e,t,s,g,h,d){return o(),a("div",null,[...t[0]||(t[0]=[i("",9)])])}const _=l(r,[["render",n]]);export{u as __pageData,_ as default};

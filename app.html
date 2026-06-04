@@ -8,20 +8,21 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
-  --accent: #0078d4;
-  --accent-hover: #1a86d9;
-  --bg: #f3f3f3;
-  --card-bg: #ffffff;
-  --card-border: #e0e0e0;
-  --text-primary: #1a1a1a;
-  --text-secondary: #666;
-  --nav-bg: #f8f8f8;
-  --nav-hover: #e8e8e8;
-  --nav-active: #e0e0e0;
-  --title-bar: #f3f3f3;
+  --accent: #7c3aed;
+  --accent-hover: #8b5cf6;
+  --bg: #0c0c12;
+  --card-bg: #16161d;
+  --card-border: rgba(255,255,255,0.08);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --nav-bg: #111118;
+  --nav-hover: rgba(255,255,255,0.06);
+  --nav-active: rgba(124,58,237,0.15);
+  --title-bar: #09090b;
   --sidebar-width: 260px;
   --title-height: 40px;
 }
+html { background: var(--bg); }
 body {
   font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: var(--bg);
@@ -41,7 +42,7 @@ body {
   -webkit-app-region: drag;
   user-select: none;
   flex-shrink: 0;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 .title-bar .back-btn {
   width: 40px;
@@ -74,7 +75,7 @@ body {
 .sidebar {
   width: var(--sidebar-width);
   background: var(--nav-bg);
-  border-right: 1px solid rgba(0,0,0,0.06);
+  border-right: 1px solid rgba(255,255,255,0.06);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -122,7 +123,7 @@ body {
 }
 .sidebar-footer {
   padding: 4px;
-  border-top: 1px solid rgba(0,0,0,0.06);
+  border-top: 1px solid rgba(255,255,255,0.06);
 }
 .sidebar-footer .nav-item .nav-icon { font-size: 16px; }
 /* Content Area */
@@ -153,7 +154,7 @@ body {
   flex-direction: column;
   transition: box-shadow 0.2s;
 }
-.tool-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.tool-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
 .card-header {
   display: flex;
   align-items: flex-start;
@@ -290,7 +291,7 @@ body {
 .bar-track {
   flex: 1;
   height: 24px;
-  background: #e0e0e0;
+  background: rgba(255,255,255,0.08);
   border-radius: 12px;
   overflow: hidden;
   position: relative;
@@ -409,7 +410,7 @@ body {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #ccc;
+  background: #444;
 }
 .status-dot.running { background: #00a500; }
 .status-dot.stopped { background: #e81123; }
@@ -523,7 +524,7 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 8px;
-  background: rgba(0,0,0,0.04);
+  background: rgba(255,255,255,0.06);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -659,10 +660,6 @@ input.settings-input {
         <span class="nav-label">其他工具</span>
       </div>
       <div class="nav-separator"></div>
-      <div class="nav-item" data-page="proxy" onclick="navigate(this)">
-        <span class="nav-icon"><iconify-icon icon="fluent:shield-checkmark-24-regular" width="20"></iconify-icon></span>
-        <span class="nav-label">代理工具</span>
-      </div>
       <div class="nav-item" data-page="store" onclick="navigate(this)">
         <span class="nav-icon"><iconify-icon icon="fluent:shopping-bag-24-regular" width="20"></iconify-icon></span>
         <span class="nav-label">工具商店</span>
@@ -672,6 +669,10 @@ input.settings-input {
       <div class="nav-item" data-page="settings" onclick="navigate(this)">
         <span class="nav-icon"><iconify-icon icon="fluent:settings-24-regular" width="20"></iconify-icon></span>
         <span class="nav-label">设置</span>
+      </div>
+      <div class="nav-item" onclick="window.close()" style="display:none" id="exitFullscreen">
+        <span class="nav-icon"><iconify-icon icon="fluent:arrow-minimize-24-regular" width="20"></iconify-icon></span>
+        <span class="nav-label">退出全屏</span>
       </div>
     </div>
   </div>
@@ -759,7 +760,6 @@ function renderPage(page) {
     case 'system': area.innerHTML = renderSystemInfo(); break;
     case 'favorites': area.innerHTML = renderFavorites(); break;
     case 'network': area.innerHTML = renderNetwork(); break;
-    case 'proxy': area.innerHTML = renderProxy(); break;
     case 'store': area.innerHTML = renderStore(); break;
     case 'settings': area.innerHTML = renderSettings(); break;
     default: area.innerHTML = renderToolGrid(page);
@@ -767,7 +767,7 @@ function renderPage(page) {
 }
 
 function renderDonut(pct, color) {
-  return `<div class="donut-ring" style="background:conic-gradient(${color} ${pct}%, #e0e0e0 ${pct}%)">
+  return `<div class="donut-ring" style="background:conic-gradient(${color} ${pct}%, rgba(255,255,255,0.08) ${pct}%)">
     <div style="width:72px;height:72px;border-radius:50%;background:var(--card-bg);display:flex;align-items:center;justify-content:center">
       <span class="donut-pct">${pct}%</span>
     </div>
@@ -985,32 +985,9 @@ function switchTab(btn, panelId) {
   });
 }
 
-function renderProxy() {
-  return `
-    <div class="content-header">代理工具</div>
-    <div class="proxy-status">
-      <div class="status-dot stopped"></div>
-      <span style="font-size:15px">代理状态：<strong>已停止</strong></span>
-    </div>
-    <div class="proxy-actions">
-      <button class="proxy-btn primary" onclick="alert('启动代理')">启动</button>
-      <button class="proxy-btn secondary" onclick="alert('上传配置')">上传配置</button>
-      <button class="proxy-btn secondary" onclick="alert('编辑配置')">编辑配置</button>
-    </div>
-    <div class="sysinfo-card">
-      <div class="label">配置信息</div>
-      <div style="margin-top:12px;font-size:13px;color:var(--text-secondary)">
-        <div>混合端口：7890</div>
-        <div>REST API：0.0.0.0:9097</div>
-        <div>Dashboard：http://127.0.0.1:19090/ui</div>
-        <div>模式：Rule</div>
-      </div>
-    </div>
-  `;
-}
-
 function renderStore() {
-  const isInstalled = false;
+  const isProxyInstalled = false;
+  const isAccelInstalled = false;
   return `
     <div class="content-header">工具商店</div>
     <div class="store-card">
@@ -1020,12 +997,21 @@ function renderStore() {
         <div class="store-desc">一个简易的代理工具插件，基于 Mihomo 内核</div>
         <div class="store-meta">大小：~21 MB / 版本：v1.19.11</div>
       </div>
-      <button class="card-btn ${isInstalled?'':'green'}" onclick="${isInstalled?"alert('打开代理工具')":"simulateDownload()"}">${isInstalled?'打开':'安装'}</button>
+      <button class="card-btn ${isProxyInstalled?'':'green'}" onclick="${isProxyInstalled?"alert('打开代理工具')":"simulateDownloadProxy()"}">${isProxyInstalled?'打开':'安装'}</button>
+    </div>
+    <div class="store-card">
+      <div class="store-icon" style="background:linear-gradient(135deg,#00a500,#0078d4)"><iconify-icon icon="fluent:globe-add-24-regular" width="28" style="color:#fff"></iconify-icon></div>
+      <div class="store-info">
+        <div class="store-name">网络加速器</div>
+        <div class="store-desc">GitHub / Steam / Spotify / Cloudflare 加速，基于 YARP 反向代理</div>
+        <div class="store-meta">大小：~5 MB / 版本：v1.0.0</div>
+      </div>
+      <button class="card-btn ${isAccelInstalled?'':'green'}" onclick="${isAccelInstalled?"alert('打开网络加速器')":"simulateDownloadAccel()"}">${isAccelInstalled?'打开':'安装'}</button>
     </div>
   `;
 }
 
-function simulateDownload() {
+function simulateDownloadProxy() {
   const footer = document.getElementById('downloadFooter');
   const progress = document.getElementById('dlProgress');
   const text = document.getElementById('dlText');
@@ -1044,6 +1030,29 @@ function simulateDownload() {
     } else {
       progress.value = val;
       text.textContent = `${(val*0.21).toFixed(1)} / 21.0 MB (${Math.round(val)}%)`;
+    }
+  }, 300);
+}
+
+function simulateDownloadAccel() {
+  const footer = document.getElementById('downloadFooter');
+  const progress = document.getElementById('dlProgress');
+  const text = document.getElementById('dlText');
+  footer.classList.add('show');
+  let val = 0;
+  const timer = setInterval(() => {
+    val += Math.random() * 15;
+    if (val >= 100) {
+      val = 100;
+      clearInterval(timer);
+      text.textContent = '下载完成！';
+      setTimeout(() => {
+        footer.classList.remove('show');
+        alert('网络加速器安装成功！');
+      }, 1000);
+    } else {
+      progress.value = val;
+      text.textContent = `${(val*0.05).toFixed(1)} / 5.0 MB (${Math.round(val)}%)`;
     }
   }, 300);
 }
@@ -1163,41 +1172,88 @@ function debounceSaveProxy() {
 function changeTheme(theme) {
   const r = document.documentElement.style;
   if (theme === 'dark') {
-    r.setProperty('--bg', '#1e1e1e');
-    r.setProperty('--card-bg', '#2d2d2d');
-    r.setProperty('--card-border', '#404040');
-    r.setProperty('--text-primary', '#e0e0e0');
-    r.setProperty('--text-secondary', '#999');
-    r.setProperty('--nav-bg', '#252525');
-    r.setProperty('--nav-hover', '#333');
-    r.setProperty('--nav-active', '#3a3a3a');
-    r.setProperty('--title-bar', '#1e1e1e');
+    r.setProperty('--bg', '#0c0c12');
+    r.setProperty('--card-bg', '#16161d');
+    r.setProperty('--card-border', 'rgba(255,255,255,0.08)');
+    r.setProperty('--text-primary', '#f1f5f9');
+    r.setProperty('--text-secondary', '#94a3b8');
+    r.setProperty('--nav-bg', '#111118');
+    r.setProperty('--nav-hover', 'rgba(255,255,255,0.06)');
+    r.setProperty('--nav-active', 'rgba(124,58,237,0.15)');
+    r.setProperty('--title-bar', '#09090b');
+    r.setProperty('--accent', '#7c3aed');
   } else if (theme === 'light') {
-    r.setProperty('--bg', '#f3f3f3');
-    r.setProperty('--card-bg', '#ffffff');
-    r.setProperty('--card-border', '#e0e0e0');
-    r.setProperty('--text-primary', '#1a1a1a');
-    r.setProperty('--text-secondary', '#666');
-    r.setProperty('--nav-bg', '#f8f8f8');
-    r.setProperty('--nav-hover', '#e8e8e8');
-    r.setProperty('--nav-active', '#e0e0e0');
-    r.setProperty('--title-bar', '#f3f3f3');
+    r.setProperty('--bg', '#0c0c12');
+    r.setProperty('--card-bg', '#16161d');
+    r.setProperty('--card-border', 'rgba(255,255,255,0.08)');
+    r.setProperty('--text-primary', '#f1f5f9');
+    r.setProperty('--text-secondary', '#94a3b8');
+    r.setProperty('--nav-bg', '#111118');
+    r.setProperty('--nav-hover', 'rgba(255,255,255,0.06)');
+    r.setProperty('--nav-active', 'rgba(124,58,237,0.15)');
+    r.setProperty('--title-bar', '#09090b');
+    r.setProperty('--accent', '#7c3aed');
   } else {
-    r.setProperty('--bg', 'rgba(243,243,243,0.7)');
-    r.setProperty('--card-bg', 'rgba(255,255,255,0.6)');
-    r.setProperty('--card-border', 'rgba(255,255,255,0.3)');
-    r.setProperty('--text-primary', '#1a1a1a');
-    r.setProperty('--text-secondary', '#666');
-    r.setProperty('--nav-bg', 'rgba(248,248,248,0.7)');
-    r.setProperty('--nav-hover', 'rgba(232,232,232,0.7)');
-    r.setProperty('--nav-active', 'rgba(224,224,224,0.7)');
-    r.setProperty('--title-bar', 'rgba(243,243,243,0.7)');
+    r.setProperty('--bg', '#0c0c12');
+    r.setProperty('--card-bg', 'rgba(22,22,29,0.7)');
+    r.setProperty('--card-border', 'rgba(255,255,255,0.08)');
+    r.setProperty('--text-primary', '#f1f5f9');
+    r.setProperty('--text-secondary', '#94a3b8');
+    r.setProperty('--nav-bg', 'rgba(17,17,24,0.7)');
+    r.setProperty('--nav-hover', 'rgba(255,255,255,0.06)');
+    r.setProperty('--nav-active', 'rgba(124,58,237,0.15)');
+    r.setProperty('--title-bar', 'rgba(9,9,11,0.7)');
+    r.setProperty('--accent', '#7c3aed');
     document.body.style.backdropFilter = 'blur(20px)';
   }
 }
 
 // Init
 renderPage('system');
+
+// Show exit fullscreen button if not in iframe
+if (window === window.top) {
+  document.getElementById('exitFullscreen').style.display = 'flex';
+}
+
+// Listen for theme sync from parent
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'theme') {
+    applyTheme(e.data.dark ? 'dark' : 'light');
+  }
+});
+
+function applyTheme(theme) {
+  const r = document.documentElement.style;
+  if (theme === 'dark') {
+    r.setProperty('--bg', '#0c0c12');
+    r.setProperty('--card-bg', '#16161d');
+    r.setProperty('--card-border', 'rgba(255,255,255,0.08)');
+    r.setProperty('--text-primary', '#f1f5f9');
+    r.setProperty('--text-secondary', '#94a3b8');
+    r.setProperty('--nav-bg', '#111118');
+    r.setProperty('--nav-hover', 'rgba(255,255,255,0.06)');
+    r.setProperty('--nav-active', 'rgba(124,58,237,0.15)');
+    r.setProperty('--title-bar', '#09090b');
+    r.setProperty('--accent', '#7c3aed');
+  } else {
+    r.setProperty('--bg', '#0c0c12');
+    r.setProperty('--card-bg', '#16161d');
+    r.setProperty('--card-border', 'rgba(255,255,255,0.08)');
+    r.setProperty('--text-primary', '#f1f5f9');
+    r.setProperty('--text-secondary', '#94a3b8');
+    r.setProperty('--nav-bg', '#111118');
+    r.setProperty('--nav-hover', 'rgba(255,255,255,0.06)');
+    r.setProperty('--nav-active', 'rgba(124,58,237,0.15)');
+    r.setProperty('--title-bar', '#09090b');
+    r.setProperty('--accent', '#7c3aed');
+  }
+}
+
+// Detect system dark mode on standalone open
+if (window === window.top && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  applyTheme('dark');
+}
 </script>
 </body>
 </html>
