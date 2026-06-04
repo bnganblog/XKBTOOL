@@ -63,17 +63,37 @@ html.dark {
 .VPNav.top::before, .VPNav.top::after,
 .VPNav.top .divider, .VPNav.top .divider-line { display: none !important; }
 .VPNav > div { background: transparent !important; }
-.VPNavBar { background: transparent !important; border-bottom: none !important; box-shadow: none !important; justify-content: center !important; }
+.VPNavBar { background: transparent !important; border-bottom: none !important; box-shadow: none !important; }
 .VPNavBar::after, .VPNavBar::before, .VPNav::after, .VPNav::before { display: none !important; }
 .VPNavBar .divider, .VPNavBar .divider-line { display: none !important; }
 
+/* ── Nav: menu centered in FULL viewport ── */
+/* VPNavBar is position:relative (VitePress default) → spans full width.
+   On sidebar pages VitePress adds position:relative to .content —
+   we must undo that so .VPNavBar remains the containing block. */
+@media (min-width: 960px) {
+  /* All pages: menu centered in full navbar (i.e. full viewport) */
+  .VPNavBar .VPNavBarMenu {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+  }
+
+  /* Prevent .content from becoming a containing block on sidebar pages */
+  .VPNavBar .content,
+  .VPNavBar .content-body {
+    position: static !important;
+  }
+}
+
 /* Title */
-.VPNavBarTitle { background: transparent !important; border-right: none !important; position: absolute; left: 204px; }
+.VPNavBarTitle { background: transparent !important; border-right: none !important; }
 .VPNavBarTitle::after { display: none !important; }
 .VPNavBarTitle .title { font-weight: 600; letter-spacing: -0.01em; }
 
 /* Nav menu */
-.VPNavBarMenu { margin: 0 auto !important; background: transparent !important; }
+.VPNavBarMenu { background: transparent !important; }
 .VPNavBarMenu .VPNavBarMenuLink { padding: 0 16px; background: transparent !important; }
 .VPNavBarSearch { display: none !important; }
 .VPNavBarAppearance { display: none !important; }
