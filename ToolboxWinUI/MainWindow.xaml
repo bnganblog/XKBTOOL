@@ -66,7 +66,7 @@
                         IsPaneToggleButtonVisible="False"
                          IsBackButtonVisible="Collapsed"
                          OpenPaneLength="240"
-                        SelectionChanged="NavView_SelectionChanged"
+                        SelectionChanged="NavView_SelectionChanged" DisplayModeChanged="NavView_DisplayModeChanged"
                         AlwaysShowHeader="True"
                         IsSettingsVisible="False"
                         ExpandedModeThresholdWidth="1200"
@@ -135,7 +135,27 @@
             </NavigationView.MenuItems>
 
             <NavigationView.PaneFooter>
-                <Button x:Name="settingsBtn"
+                <StackPanel Orientation="Vertical" Spacing="8">
+                    <Grid x:Name="searchArea">
+                        <TextBox x:Name="searchBox"
+                                 PlaceholderText="搜索工具..."
+                                 FontSize="13"
+                                 MinHeight="32"
+                                 Margin="16,0,16,0"
+                                 TextChanged="SearchBox_TextChanged"/>
+                        <Button x:Name="searchBtn"
+                                Width="40"
+                                Height="32"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                HorizontalAlignment="Center"
+                                Visibility="Collapsed"
+                                Click="SearchBtn_Click"
+                                ToolTipService.ToolTip="搜索工具">
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE721;" FontSize="16"/>
+                        </Button>
+                    </Grid>
+                    <Button x:Name="settingsBtn"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         Background="Transparent"
@@ -147,6 +167,7 @@
                         <TextBlock Text="  设置" VerticalAlignment="Center" FontSize="14"/>
                     </StackPanel>
                 </Button>
+                </StackPanel>
             </NavigationView.PaneFooter>
 
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">

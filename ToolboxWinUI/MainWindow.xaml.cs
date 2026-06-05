@@ -258,6 +258,71 @@ public sealed partial class MainWindow : Window
             _navHistory.Push(tag);
     }
 
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var query = searchBox.Text?.Trim() ?? "";
+        if (_currentTag == "system" && _systemInfoCache != null)
+            contentArea.Children.Clear();
+
+        if (string.IsNullOrEmpty(query))
+        {
+            _systemInfoCache = null;
+            if (_currentTag == "system")
+                ShowSystemInfo();
+            else
+                LoadContent(_currentTag);
+            return;
+        }
+
+        var allTools = _allTools.ToList();
+        if (_cachedStorePlugins != null) allTools.AddRange(_cachedStorePlugins);
+        var filtered = allTools
+            .Where(t => t.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+                     || (t.Description?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false))
+            .GroupBy(t => t.Name).Select(g => g.First()).ToList();
+
+        contentArea.Children.Clear();
+        if (filtered.Count > 0)
+        {
+            contentArea.Children.Add(new TextBlock
+            {
+                Text = $"\u641c\u7d22 \u201c{query}\u201d \u2014 {filtered.Count} \u4e2a\u7ed3\u679c",
+                FontSize = 14, Foreground = _textSecondaryBrush,
+                Margin = new Thickness(0, 0, 0, 16)
+            });
+            contentArea.Children.Add(CreateToolGrid(filtered));
+        }
+        else
+        {
+            contentArea.Children.Add(new TextBlock
+            {
+                Text = $"\u672a\u627e\u5230 \u201c{query}\u201d \u7684\u5de5\u5177",
+                FontSize = 14, Foreground = _textSecondaryBrush
+            });
+        }
+    }
+
+    private void UpdateSearchVisibility()
+    {
+        var compact = navView.DisplayMode == NavigationViewDisplayMode.Compact
+                   || navView.DisplayMode == NavigationViewDisplayMode.Minimal
+                   || !navView.IsPaneOpen;
+        searchBox.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        searchBtn.Visibility = compact ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void NavView_DisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args)
+    {
+        UpdateSearchVisibility();
+    }
+
+    private void SearchBtn_Click(object sender, RoutedEventArgs e)
+    {
+        navView.IsPaneOpen = true;
+        UpdateSearchVisibility();
+        searchBox.Focus(FocusState.Programmatic);
+    }
+
     private void Cleanup()
     {
         _chartTimer?.Stop();
@@ -2657,6 +2722,7 @@ public sealed partial class MainWindow : Window
     private void PaneToggleBtn_Click(object sender, RoutedEventArgs e)
     {
         navView.IsPaneOpen = !navView.IsPaneOpen;
+        UpdateSearchVisibility();
     }
 
     private void BackBtn_Click(object sender, RoutedEventArgs e)
