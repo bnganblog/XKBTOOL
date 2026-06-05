@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Management;
@@ -128,7 +128,7 @@ public sealed partial class MainWindow : Window
     private string _cpuInfo, _cpuCores, _cpuUsage, _cpuFreq;
     private string _totalMemory, _availableMemory, _memoryUsage, _memoryFreq;
     private string _gpuInfo, _gpuMemory;
-    private string _diskInfo, _diskModel, _osInfo, _localIP, _audioInfo, _monitorInfo;
+    private string _diskInfo, _diskModel, _osInfo, _localIP, _audioInfo, _monitorInfo, _uptime;
     private UIElement _systemInfoCache;
     private bool _loaded;
 
@@ -2705,6 +2705,7 @@ public sealed partial class MainWindow : Window
 
     private void ShowSystemInfo()
     {
+        _uptime = GetSystemUptime();
         if (_systemInfoCache != null) { contentArea.Children.Add(_systemInfoCache); return; }
 
         var stackPanel = new StackPanel();
@@ -2769,11 +2770,31 @@ public sealed partial class MainWindow : Window
         stackPanel.Children.Add(chartCard);
 
         stackPanel.Children.Add(CreateInfoCard("硬盘信息", new[] { CreateInfoRow("硬盘", _diskInfo), CreateInfoRow("型号", _diskModel) }));
-        stackPanel.Children.Add(CreateInfoCard("系统信息", new[] { CreateInfoRow("操作系统", _osInfo), CreateInfoRow("计算机名", Environment.MachineName), CreateInfoRow("用户名", Environment.UserName), CreateInfoRow("本机IP", _localIP), CreateInfoRow("声卡", _audioInfo), CreateInfoRow("显示器", _monitorInfo) }));
+        stackPanel.Children.Add(CreateInfoCard("系统信息", new[] { CreateInfoRow("操作系统", _osInfo), CreateInfoRow("计算机名", Environment.MachineName), CreateInfoRow("用户名", Environment.UserName), CreateInfoRow("本机IP", _localIP), CreateInfoRow("声卡", _audioInfo), CreateInfoRow("运行时间", _uptime), CreateInfoRow("显示器", _monitorInfo) }));
 
         _systemInfoCache = stackPanel;
         contentArea.Children.Add(stackPanel);
         StartChartTimer(cpuChart, memChart, gpuChart);
+    }
+
+    private string GetSystemUptime()
+    {
+        try
+        {
+            using var s = new ManagementObjectSearcher("SELECT LastBootUpTime FROM Win32_OperatingSystem");
+            foreach (ManagementObject o in s.Get())
+            {
+                var dmt = o["LastBootUpTime"]?.ToString();
+                if (dmt == null) break;
+                var boot = ManagementDateTimeConverter.ToDateTime(dmt);
+                var uptime = DateTime.Now - boot;
+                if (uptime.TotalDays >= 1)
+                    return $"{uptime:%d}天 {uptime:%h}小时 {uptime:%m}分钟";
+                return $"{uptime:%h}小时 {uptime:%m}分钟";
+            }
+        }
+        catch { }
+        return "未知";
     }
 
     private void StartChartTimer(object cpuChart, object memChart, object gpuChart)
