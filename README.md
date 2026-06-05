@@ -4,7 +4,7 @@
 
 **显卡吧工具箱 WinUI3** 是一款面向 PC 硬件爱好者、DIY 玩家和维修人员的 Windows 桌面工具集。它将各类硬件检测、系统优化、性能测试工具整合到统一的现代化界面中，让你告别杂乱的桌面和繁琐的文件夹翻找。
 
-![img](img\main.jpg)
+![img](https://github.com/bnganblog/XKBTOOL/blob/master/img/main.jpg)
 
 一个**开箱即用、美观高效**的工具管理平台。你只需将常用硬件工具放入 `tools/` 目录，应用便会自动识别并以卡片形式呈现，配合 WinUI 3 的原生流畅设计语言和毛玻璃特效，带来媲美系统级应用的体验。
 
